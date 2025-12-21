@@ -1,0 +1,3 @@
+pypdf
+pyMuPDF
+pyside6

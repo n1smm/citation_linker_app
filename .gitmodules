@@ -1,0 +1,3 @@
+[submodule "citationLinker"]
+	path = citationLinker
+	url = git@github.com:n1smm/citationLinker.git

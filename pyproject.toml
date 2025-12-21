@@ -1,0 +1,23 @@
+[project]
+name = "citiaton-linker-complete"
+version = "0.1.0"
+description = "the full citation linekr app"
+authors = [{name = "n1smm", email = "nomail@please.com"}]
+requires-python = ">=3.12"
+readme = "README.md"
+dependencies = [
+    "citation-linker @ file:///${PROJECT_ROOT}/citation-linker",
+    "qtapp @ file:///${PROJECT_ROOT}/QtApp"
+]
+
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+
+[tool.hatch.build.targets.wheel]
+packages = [
+	"citation-linker/src/citation_linker",
+	"QtApp/src/qtapp"
+]
