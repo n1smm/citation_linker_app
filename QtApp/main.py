@@ -25,6 +25,9 @@ class PdfViewer(QMainWindow):
 
         self.layout.addWidget(file_button)
 
+    def open_file(self):
+
+
 def main():
     app = QApplication()
     viewer = PdfViewer()

@@ -1,13 +1,11 @@
 #main import
-from PySide6.QtCore         import Qt, QPoint, QPointF, Slot
-from PySide6.QtUiTools      import QUiLoader
+from PySide6.QtCore         import Qt, QPointF
 from PySide6.QtWidgets      import (QWidget,
                                     QPushButton,
                                     QSpinBox,
                                     QLabel,
                                     QHBoxLayout)
 
-from PySide6.QtPdfWidgets   import  QPdfView
 from PySide6.QtPdf          import  QPdfPageNavigator
 
 
@@ -34,9 +32,10 @@ class PdfNavigator(QWidget):
 
         ### initializations
         self.setWindowTitle("pdf-navigator")
-        self.page_display.setValue(1)
 
         ### options
+        self.page_display.setValue(1)
+        self.page_display.setSingleStep(10)
         """ declared in set_total_pages
         self.page_display.setRange(1, total_pages)
         self.page_display.setValue(self.nav.currentPage())
@@ -52,10 +51,7 @@ class PdfNavigator(QWidget):
 
         """ declared in set_view
         self.nav.currentPageChanged.connect(self.update_page_display)
-        self.page_display.valueChanged.connect(
-                                        lambda i:
-                                        self.nav.jump(i, QPoint())
-                                       )
+        self.page_display.editingFinished.connect(self.update_nav_from_spinbox)
         """
 
 
@@ -109,14 +105,18 @@ class PdfNavigator(QWidget):
             self.page_display.setValue(page_number)
             self.page_display.blockSignals(False)
 
+    #updates navigation when changed manually in spinbox widget
+    def update_nav_from_spinbox(self):
+        if self.nav:
+            page = self.page_display.value()
+            self.nav.jump(page, QPointF())
+
+
     #setter for initializing navigation
     def set_view(self, view):
         self.nav: QPdfPageNavigator = view.pageNavigator()
         self.nav.currentPageChanged.connect(self.update_page_display)
-        self.page_display.valueChanged.connect(
-                                        lambda i:
-                                        self.nav.jump(i, QPoint())
-                                       )
+        self.page_display.editingFinished.connect(self.update_nav_from_spinbox)
 
     #setter for passing number of pages in document
     def set_total_pages(self, tot_pages):
@@ -125,6 +125,7 @@ class PdfNavigator(QWidget):
             self.label.setText(f"/{tot_pages -1}")
             # self.update_page_display(page)
 
+    ### getters
     def get_curr_zoom(self):
         if self.nav:
             return (self.nav.currentZoom())
