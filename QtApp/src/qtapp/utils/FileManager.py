@@ -5,8 +5,7 @@ from    PySide6.QtWidgets           import  (QWidget,
                                              QPushButton,
                                              QHBoxLayout,
                                              QLabel,
-                                             QMessageBox,
-                                             )
+                                             QMessageBox,)
 
 
 class FileManager(QWidget):
