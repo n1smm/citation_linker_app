@@ -1,12 +1,13 @@
-from    PySide6.QtCore              import  Qt, QFile
-from    PySide6.QtWidgets           import  (QWidget,
+from    PySide6.QtCore                  import  Qt, QFile
+from    PySide6.QtWidgets               import  (QWidget,
                                              QVBoxLayout)
 #qt pdf imports
-from    PySide6.QtPdf               import  QPdfDocument#, QPdfPageNavigator, QPdfPageRenderer
-from    PySide6.QtPdfWidgets        import  QPdfView
+from    PySide6.QtPdf                   import  QPdfDocument#, QPdfPageNavigator, QPdfPageRenderer
+from    PySide6.QtPdfWidgets            import  QPdfView
 
 #local
-from    qtapp.viewerUtils.Navigator  import PdfNavigator
+from    qtapp.viewerUtils.Navigator     import PdfNavigator
+from    qtapp.viewerUtils.ZoomSelector  import ZoomSelector
 
 class PdfViewer(QWidget):
     def __init__(self, parent=None):
@@ -22,6 +23,8 @@ class PdfViewer(QWidget):
         self.view = QPdfView(self)
         self.document = QPdfDocument(self)
         self.navigator = PdfNavigator(self)
+        self.zoom_selector = ZoomSelector(self)
+        self.zoom_factor = 1.0
 
         ### initializations
         self.setWindowTitle("Viewer")
@@ -32,10 +35,13 @@ class PdfViewer(QWidget):
         self.view.hide()
         self.navigator.hide()
 
-        ### events
+        ### signals
+        self.zoom_selector.zoom_mode_changed.connect(self.change_zoom_mode)
+        self.zoom_selector.zoom_factor_changed.connect(self.change_zoom_factor)
 
         ### element appending
         self.layout.addWidget(self.navigator)
+        self.layout.addWidget(self.zoom_selector)
         self.layout.addWidget(self.view)
 
     ### methods
@@ -47,6 +53,13 @@ class PdfViewer(QWidget):
             self.navigator.set_view(self.view)
             self.navigator.show()
             self.view.show()
+
+    def change_zoom_mode(self, mode):
+        self.view.setZoomMode(mode)
+
+    def change_zoom_factor(self, factor):
+        self.zoom_factor = factor
+        self.view.setZoomFactor(factor)
 
 
 
