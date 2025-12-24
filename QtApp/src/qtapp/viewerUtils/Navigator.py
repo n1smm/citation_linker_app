@@ -1,5 +1,5 @@
 #main import
-from PySide6.QtCore         import Qt, QPointF
+from PySide6.QtCore         import Qt, QPointF, QTimer
 from PySide6.QtWidgets      import (QWidget,
                                     QPushButton,
                                     QSpinBox,
@@ -7,6 +7,50 @@ from PySide6.QtWidgets      import (QWidget,
                                     QHBoxLayout)
 
 from PySide6.QtPdf          import  QPdfPageNavigator
+from PySide6.QtGui          import  QValidator, QKeyEvent
+
+
+class RepeatButton(QPushButton):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.timer = QTimer(self)
+        self.timer.setInterval(100)
+        self.timer.timeout.connect(self.click)
+
+    def mousePressEvent(self, event):
+        super().mousePressEvent(event)
+        self.timer.start()
+
+    def mouseReleaseEvent(self, event):
+        super().mouseReleaseEvent(event)
+        self.timer.stop()
+
+
+class HumanReadableSpinBox(QSpinBox):
+    def textFromValue(self, value):
+        return str(value + 1)
+
+    def valueFromText(self, text):
+        try:
+            return int(text) -1
+        except ValueError:
+            return 0
+
+    def validate(self, text, pos):
+        if text == "":
+            return (QValidator.Intermediate, text, pos)
+        try:
+            val = int(text)
+        except ValueError:
+            return (QValidator.Invalid, text, pos)
+        if 1 <= val <= self.maximum() + 1:
+            return (QValidator.Acceptable, text, pos)
+        elif val < 1:
+            return (QValidator.Intermediate, text, pos)
+        else:
+            return (QValidator.Invalid, text, pos)
+
+
 
 
 class PdfNavigator(QWidget):
@@ -14,8 +58,8 @@ class PdfNavigator(QWidget):
         super().__init__(parent)
 
         ### local declaration
-        back_button = QPushButton("<")
-        forward_button = QPushButton(">")
+        back_button = RepeatButton("<")
+        forward_button = RepeatButton(">")
         b_history_button = QPushButton("<<")
         f_history_button = QPushButton(">>")
 
@@ -26,7 +70,7 @@ class PdfNavigator(QWidget):
         self.layout = QHBoxLayout()
         self.setLayout(self.layout)
         self.nav = None
-        self.page_display = QSpinBox()
+        self.page_display = HumanReadableSpinBox()
         self.label = QLabel(f"/{total_pages}")
 
 
@@ -34,7 +78,7 @@ class PdfNavigator(QWidget):
         self.setWindowTitle("pdf-navigator")
 
         ### options
-        self.page_display.setValue(1)
+        self.page_display.setValue(0)
         self.page_display.setSingleStep(10)
         """ declared in set_total_pages
         self.page_display.setRange(1, total_pages)
@@ -71,6 +115,8 @@ class PdfNavigator(QWidget):
         if self.nav:
             page = self.nav.currentPage()
             location = self.nav.currentLocation()
+            print("location: ", location)
+            print("page: ", page)
             next_page = min(page + 1, self.page_display.maximum())
             self.nav.jump(next_page, location)
             self.update_page_display(next_page)
@@ -80,6 +126,8 @@ class PdfNavigator(QWidget):
         if self.nav:
             page = self.nav.currentPage()
             location = self.nav.currentLocation()
+            print("location: ", location)
+            print("page: ", page)
             prev_page = max(page - 1, self.page_display.minimum())
             self.nav.jump(prev_page, location)
             self.update_page_display(prev_page)
@@ -121,8 +169,8 @@ class PdfNavigator(QWidget):
     #setter for passing number of pages in document
     def set_total_pages(self, tot_pages):
             # page = self.nav.currentPage()
-            self.page_display.setRange(1, tot_pages -1)
-            self.label.setText(f"/{tot_pages -1}")
+            self.page_display.setRange(0, tot_pages -1)
+            self.label.setText(f"/{tot_pages}")
             # self.update_page_display(page)
 
     ### getters
@@ -137,5 +185,16 @@ class PdfNavigator(QWidget):
     def get_curr_location(self):
         if self.nav:
             return(self.nav.currentLocation())
+
+    # def keyPressEvent(self, event):
+    #     print("event key", event.key())
+    #     if event.key() == Qt.Key_Up:
+    #         print("key up ")
+    #         self.nav.jump(self.nav.currentPage() - 10, QPointF())
+    #     elif event.key() == Qt.Key_Down:
+    #         print("key down ")
+    #         self.nav.jump(self.nav.currentPage() + 10, QPointF())
+    #     else:
+    #         super().keyPressEvent(event)
 
         

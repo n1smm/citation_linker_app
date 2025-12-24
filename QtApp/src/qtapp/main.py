@@ -1,14 +1,14 @@
 import  sys
-from    PySide6.QtWidgets       import  (QApplication,
-                                         QMainWindow,
-                                         QWidget,
-                                         QVBoxLayout)
-from    PySide6.QtCore          import  Qt
-from    PySide6.QtPdf           import  QPdfDocument#, QPdfPageNavigator, QPdfPageRenderer
-from    PySide6.QtPdfWidgets    import  QPdfView
+from    PySide6.QtWidgets             import  (QApplication,
+                                                 QMainWindow,
+                                                 QWidget,
+                                                 QVBoxLayout)
+from    PySide6.QtCore                import  Qt
+from    PySide6.QtPdf                 import  QPdfDocument#, QPdfPageNavigator, QPdfPageRenderer
+from    PySide6.QtPdfWidgets          import  QPdfView
 
-from qtapp.PdfViewer            import  PdfViewer
-from qtapp.utils.FileManager    import FileManager
+from    qtapp.components.PdfViewer    import  PdfViewer
+from    qtapp.components.FileManager  import  FileManager
 
 class CitationLinkerApp(QMainWindow):
     def __init__(self):
