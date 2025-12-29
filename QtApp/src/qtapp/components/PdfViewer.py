@@ -26,9 +26,9 @@ class PdfViewer(QWidget):
         # self.view = QPdfView(self)
         self.view = ExtendedView(self)
         self.document = QPdfDocument(self)
-        self.navigator = PdfNavigator(self)
-        self.zoom_selector = ZoomSelector(self)
-        self.text_selector = TextSelector(self)
+        self.navigator = self.view.navigator
+        self.zoom_selector = self.view.zoom_selector
+        self.text_selector = self.view.text_selector
         self.zoom_factor = 1.0
 
         ### initializations
@@ -38,8 +38,6 @@ class PdfViewer(QWidget):
         self.view.setDocument(self.document)
         self.view.setPageMode(QPdfView.MultiPage)
         self.view.hide()
-        self.navigator.hide()
-        self.zoom_selector.hide()
         self.view.set_selection_enabled(False)
 
         ### signals
@@ -69,6 +67,7 @@ class PdfViewer(QWidget):
     def change_zoom_factor(self, factor):
         self.zoom_factor = factor
         self.view.setZoomFactor(factor)
+
 
 
 

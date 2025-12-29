@@ -1,5 +1,5 @@
 #main import
-from PySide6.QtCore         import Qt, QPointF, QTimer
+from PySide6.QtCore         import Qt, QPointF, QTimer, Slot
 from PySide6.QtWidgets      import (QWidget,
                                     QPushButton,
                                     QSpinBox,
@@ -73,7 +73,6 @@ class PdfNavigator(QWidget):
         self.page_display = HumanReadableSpinBox()
         self.label = QLabel(f"/{total_pages}")
 
-
         ### initializations
         self.setWindowTitle("pdf-navigator")
 
@@ -111,6 +110,7 @@ class PdfNavigator(QWidget):
     ### methods
 
     #1 page forward
+    @Slot()
     def page_forward(self):
         if self.nav:
             page = self.nav.currentPage()
@@ -122,6 +122,7 @@ class PdfNavigator(QWidget):
             self.update_page_display(next_page)
 
     #one page back
+    @Slot()
     def page_back(self):
         if self.nav:
             page = self.nav.currentPage()
@@ -133,6 +134,7 @@ class PdfNavigator(QWidget):
             self.update_page_display(prev_page)
 
     #one forward in logged navigation history 
+    @Slot()
     def history_forward(self):
         if self.nav:
             self.nav.forward()
@@ -140,6 +142,7 @@ class PdfNavigator(QWidget):
             self.update_page_display(page)
 
     #one back in logged navigation history 
+    @Slot()
     def history_back(self):
         if self.nav:
             self.nav.back()
@@ -147,6 +150,7 @@ class PdfNavigator(QWidget):
             self.update_page_display(page)
         
     #updates the page_display according to nav
+    @Slot()
     def update_page_display(self, page_number):
         if page_number != self.page_display.value():
             self.page_display.blockSignals(True)
@@ -154,6 +158,7 @@ class PdfNavigator(QWidget):
             self.page_display.blockSignals(False)
 
     #updates navigation when changed manually in spinbox widget
+    @Slot()
     def update_nav_from_spinbox(self):
         if self.nav:
             page = self.page_display.value()

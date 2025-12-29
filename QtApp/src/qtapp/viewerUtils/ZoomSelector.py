@@ -29,6 +29,7 @@ class ZoomSelector(QComboBox):
         self.addItem("150%") # 10
         self.addItem("200%") # 11
         self.addItem("400%") # 12
+        self.addItem("152%") # 13
 
 
         self.currentTextChanged.connect(self.on_current_text_changed)
