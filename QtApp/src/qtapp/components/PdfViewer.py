@@ -29,6 +29,7 @@ class PdfViewer(QWidget):
         self.navigator = self.view.navigator
         self.zoom_selector = self.view.zoom_selector
         self.text_selector = self.view.text_selector
+        self.text_handler = self.view.text_handler
         self.zoom_factor = 1.0
 
         ### initializations
@@ -53,6 +54,7 @@ class PdfViewer(QWidget):
     def open_viewer(self, file_path):
         if file_path:
             self.file_path = file_path
+            self.text_handler.assign_document(file_path)
             self.document.load(self.file_path)
             self.navigator.set_total_pages(self.document.pageCount())
             self.navigator.set_view(self.view)

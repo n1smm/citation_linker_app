@@ -1,9 +1,10 @@
 from    PySide6.QtPdfWidgets            import  QPdfView
 from    PySide6.QtPdf                   import  QPdfPageNavigator
-from    PySide6.QtCore                  import  Qt, QMargins
-from    PySide6.QtGui                   import  QKeyEvent, QMouseEvent, QGuiApplication
+from    PySide6.QtCore                  import  Qt, QMargins, QRect, QRectF, QTimer
+from    PySide6.QtGui                   import  QKeyEvent, QMouseEvent, QGuiApplication, QPainter, QColor
 
 from    qtapp.viewerUtils.TextSelector  import TextSelector
+from    qtapp.viewerUtils.TextHandler   import TextHandler
 from    qtapp.viewerUtils.Navigator     import PdfNavigator
 from    qtapp.viewerUtils.ZoomSelector  import ZoomSelector
 
@@ -24,11 +25,13 @@ class   ExtendedView(QPdfView):
 
         ### member declarations
         self.zoom_transform_factor = dpi / 72.0
+        self.selection_rect = None
         print("dpi: ", dpi, "transform_factor: ", self.zoom_transform_factor)
         print("physical dpi: ", physical_dpi)
 
         ### extended functionality
         self.text_selector = TextSelector(self)
+        self.text_handler = TextHandler(self)
         self.navigator = PdfNavigator(self)
         self.zoom_selector = ZoomSelector(self)
         self.setZoomMode(QPdfView.ZoomMode.FitInView)
@@ -42,11 +45,35 @@ class   ExtendedView(QPdfView):
         self.navigator.hide()
         self.zoom_selector.hide()
 
+        ### signals
+        # self.text_selector.rectf_changed.connect()
+        self.text_selector.rect_changed.connect(self.color_selection)
+
 
     ### event overrides
+    def color_selection(self, rect):
+        self.selection_rect = None
+        self.selection_rect = rect
+        self.update()
+        
+
+    def clear_selection(self):
+        self.selection_rect = None
+        self.update()
+
+    def paintEvent(self, event):
+        super().paintEvent(event)
+        if self.selection_rect:  # QRect or QRectF
+            painter = QPainter(self.viewport())
+            color = QColor(255, 255, 0, 100)  # Semi-transparent yellow
+            painter.setBrush(color)
+            painter.setPen(Qt.NoPen)
+            painter.drawRect(self.selection_rect)
+
     def mousePressEvent(self, event):
 
         if self.selection_enabled and event.button() == Qt.LeftButton:
+            self.clear_selection()
             curr_page = self.navigator.get_curr_page()
             if curr_page is None:
                 print("Warning: No current page selected.")
@@ -89,6 +116,7 @@ class   ExtendedView(QPdfView):
             super().mouseReleaseEvent(event)
 
     def wheelEvent(self, event):
+        self.clear_selection()
         if event.modifiers() & Qt.ShiftModifier:
             super().wheelEvent(event)
             return
@@ -117,6 +145,7 @@ class   ExtendedView(QPdfView):
 
     def keyPressEvent(self, event):
 
+        self.clear_selection()
         if event.key() == Qt.Key_Left:
             self.navigator.page_back()
         elif event.key() == Qt.Key_Right:
