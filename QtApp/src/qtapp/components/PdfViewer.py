@@ -36,7 +36,7 @@ class PdfViewer(QWidget):
         
         ### options
         self.view.setDocument(self.document)
-        self.view.setPageMode(QPdfView.MultiPage)
+        self.view.setPageMode(QPdfView.SinglePage)
         self.view.hide()
         self.view.set_selection_enabled(False)
 
@@ -58,8 +58,15 @@ class PdfViewer(QWidget):
             self.navigator.set_view(self.view)
             self.navigator.show()
             self.zoom_selector.show()
+            self.zoom_selector.reset()
             self.view.set_selection_enabled(True)
             self.view.show()
+            #signal
+            self.navigator.nav.currentPageChanged.connect(self.on_page_change)
+
+    def on_page_change(self, page_idx):
+        page = self.document.getAllText(page_idx)
+        print(f" page: {page_idx}, has rect: {page.boundingRectangle()}")
 
     def change_zoom_mode(self, mode):
         self.view.setZoomMode(mode)

@@ -31,6 +31,8 @@ class ZoomSelector(QComboBox):
         self.addItem("400%") # 12
         self.addItem("152%") # 13
 
+        self.setCurrentIndex(0)
+
 
         self.currentTextChanged.connect(self.on_current_text_changed)
         self.lineEdit().editingFinished.connect(self.editing_finished)
@@ -42,7 +44,20 @@ class ZoomSelector(QComboBox):
 
     @Slot()
     def reset(self):
-        self.setCurrentIndex(8)
+        self.setCurrentIndex(0)
+
+    @Slot()
+    def set_zoom_idx(self, idx):
+        norm_idx = idx % self.count()
+        self.setCurrentIndex(norm_idx)
+
+    @Slot()
+    def set_zoom_up_down(self, is_up):
+        if is_up:
+            self.setCurrentIndex((self.currentIndex() - 1) % self.count())
+        else:
+            self.setCurrentIndex((self.currentIndex() + 1) % self.count())
+
 
     @Slot()
     def on_current_text_changed(self, text):

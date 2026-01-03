@@ -38,6 +38,7 @@ class CitationLinkerApp(QMainWindow):
         self.layout.addWidget(self.initialViewer)
 
 
+
     ### methods
     def file_upload(self):
         self.upload_path = self.fileManager.get_file_path()
