@@ -129,7 +129,7 @@ class   ExtendedView(QPdfView):
         self.selection_enabled = enabled
 
         
-    def effectiveZoomFactor(self):
+    def effectiveZoomFactor(self, alternative=False):
         page_size = self.document().pagePointSize(self.navigator.get_curr_page())
         page_th = self.document().pageCount()
         marg = self.documentMargins()
@@ -152,8 +152,11 @@ class   ExtendedView(QPdfView):
 
         elif self.zoomMode() == QPdfView.ZoomMode.FitInView:
             total_height = float(viewport.height() - float(marg.top()) - float(marg.bottom()))
+            total_width = float(viewport.width()) - float(marg.left()) - float(marg.right())
             scale_x = float(viewport.width()) / page_size.width()
             scale_y = float(viewport.height()) / page_size.height()
+            if alternative:
+                return scale_y
             return min(scale_x, scale_y)
 
         return self.zoomFactor()
