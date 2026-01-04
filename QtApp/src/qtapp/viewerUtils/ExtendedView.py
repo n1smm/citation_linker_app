@@ -1,7 +1,7 @@
 from    PySide6.QtPdfWidgets            import  QPdfView
 from    PySide6.QtPdf                   import  QPdfPageNavigator
 from    PySide6.QtCore                  import  Qt, QMargins, QRect, QRectF, QTimer
-from    PySide6.QtGui                   import  QKeyEvent, QMouseEvent, QGuiApplication, QPainter, QColor
+from    PySide6.QtGui                   import  QKeyEvent, QMouseEvent, QGuiApplication, QPainter, QPen, QColor
 
 from    qtapp.viewerUtils.TextSelector  import TextSelector
 from    qtapp.viewerUtils.TextHandler   import TextHandler
@@ -10,8 +10,8 @@ from    qtapp.viewerUtils.ZoomSelector  import ZoomSelector
 
 
 # extended QPdfView with extra functionality:
-# text selector, navigator and zoom selector
-# overridden mouse events
+# text selector, text_handler, navigator and zoom selector
+# overridden mouse, paint events
 class   ExtendedView(QPdfView):
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -26,6 +26,8 @@ class   ExtendedView(QPdfView):
         ### member declarations
         self.zoom_transform_factor = dpi / 72.0
         self.selection_rect = None
+        self.current_annotations = None
+        self.current_links = None
         print("dpi: ", dpi, "transform_factor: ", self.zoom_transform_factor)
         print("physical dpi: ", physical_dpi)
 
@@ -46,65 +48,53 @@ class   ExtendedView(QPdfView):
         self.zoom_selector.hide()
 
         ### signals
-        # self.text_selector.rectf_changed.connect()
         self.text_selector.rect_changed.connect(self.color_selection)
+
+        ### TODO do a signal that will send curr page on change to text_selector
+
 
 
     ### event overrides
-    def color_selection(self, rect):
-        self.selection_rect = None
-        self.selection_rect = rect
-        self.update()
-        
 
-    def clear_selection(self):
-        self.selection_rect = None
-        self.update()
+    ### ---- paint events ------
 
     def paintEvent(self, event):
         super().paintEvent(event)
-        if self.selection_rect:  # QRect or QRectF
+        self.update_text_selector()
+        self.paint_annotiations()
+        if self.selection_rect:
             painter = QPainter(self.viewport())
-            color = QColor(255, 255, 0, 100)  # Semi-transparent yellow
+            color = QColor(255, 255, 0, 100)
             painter.setBrush(color)
             painter.setPen(Qt.NoPen)
             painter.drawRect(self.selection_rect)
+
+
+    ### --- interaction events ----
 
     def mousePressEvent(self, event):
 
         if self.selection_enabled and event.button() == Qt.LeftButton:
             self.clear_selection()
-            curr_page = self.navigator.get_curr_page()
-            if curr_page is None:
-                print("Warning: No current page selected.")
-                return
-
-            document = self.document()
-            try:
-                curr_doc_size = document.pagePointSize(curr_page)
-            except Exception as e:
-                print(f"Error getting page size: {e}")
-                curr_doc_size = None
-
-            selector_state = {
-                "current_page": curr_page,
-                "current_zoom_factor": self.effectiveZoomFactor(),
-                "current_zoom_custom": self.zoomFactor(),
-                "current_zoom_mode": self.zoomMode(),
-                "current_document_size": curr_doc_size,
-                "current_viewport": self.viewport().size(),
-                "w_offset": float(self.horizontalScrollBar().value()),
-                "h_offset": float(self.verticalScrollBar().value()),
-                "current_margins": float(self.documentMargins().left()),
-            }
-            self.text_selector.set_curr_state(selector_state)
-            print("viewport: ", selector_state["current_viewport"])
+            self.update_text_selector()
             self.text_selector.handleMousePress(event)
+            if self.current_links and self.current_annotations:
+                for annot in self.current_annotations:
+                    screen_rect = self.text_selector.page_to_viewport_coords(annot["rect"])
+                    if screen_rect.contains(event.pos()):
+                        print ("INTERSECTIOON")
+                for link in self.current_links:
+                    screen_rect = self.text_selector.page_to_viewport_coords(link["from"])
+                    if screen_rect.contains(event.pos()):
+                        print("INTERSECTIOON LINK")
+                        print("to filed", link["to_dpi"])
+                        self.navigator.jump_to(link["page"], link["to_dpi"])
         else:
             super().mousePressEvent(event)
 
     def mouseMoveEvent(self, event):
         if self.selection_enabled and self.text_selector.selecting:
+
             self.text_selector.handleMouseMove(event)
         else:
             super().mouseMoveEvent(event)
@@ -154,10 +144,73 @@ class   ExtendedView(QPdfView):
             super().keyPressEvent(event)
 
     ### methods
+
+    ### --- paint methods -----
+
+    def paint_annotiations(self):
+        painter = QPainter(self.viewport())
+        painter.setRenderHint(QPainter.Antialiasing)
+
+        self.current_annotations = None
+        curr_page = self.navigator.get_curr_page()
+        annotations = self.text_handler.get_all_annotations(curr_page, self.effectiveZoomFactor())
+        links = self.text_handler.get_all_links(curr_page, self.effectiveZoomFactor())
+        self.current_annotations = annotations
+        self.current_links = links
+
+        for annot in annotations:
+            screen_rect = self.text_selector.page_to_viewport_coords(annot["rect"])
+
+            if annot["type"] == "Underline":
+                self.draw_underline(painter, screen_rect, annot)
+            if annot["type"] == "Highlight":
+                self.draw_highlight(painter, screen_rect, annot)
+            if annot["type"] == "Link":
+                self.draw_link(painter, screen_rect)
+        for link in links:
+            screen_rect = self.text_selector.page_to_viewport_coords(link["from"])
+            self.draw_link(painter, screen_rect)
+
+        painter.end()
+
+
+    def draw_underline(self, painter, rect, annot):
+        color = QColor(*annot.get("color", [0,0,225]))
+        pen = QPen(color, 1)
+        pen.setStyle(Qt.SolidLine)
+        painter.setPen(pen)
+
+        painter.drawLine(
+                rect.bottomLeft(),
+                rect.bottomRight()
+                )
+
+    def draw_highlight(self, painter, rect, annot):
+        color = QColor(*annot.get("color", [255,255,0]))
+        color.setAlpha(int(annot.get("opacity", 0.3) * 255))
+        painter.fillRect(rect, color)
+
+    def draw_link(self, painter, rect):
+        pen = QPen(QColor(0, 0, 255, 100), 1)
+        pen.setStyle(Qt.DashLine)
+        painter.setPen(pen)
+        painter.drawRect(rect)
+
+    def color_selection(self, rect):
+        self.selection_rect = None
+        self.selection_rect = rect
+        self.update()
+        
+
+    def clear_selection(self):
+        self.selection_rect = None
+        self.update()
+
     def set_selection_enabled(self, enabled):
         self.selection_enabled = enabled
 
         
+    ### --- zoom factor translation ---
     def effectiveZoomFactor(self, alternative=False):
         page_size = self.document().pagePointSize(self.navigator.get_curr_page())
         page_th = self.document().pageCount()
@@ -189,3 +242,26 @@ class   ExtendedView(QPdfView):
             return min(scale_x, scale_y)
 
         return self.zoomFactor()
+
+    ### --- other utils ---
+    def update_text_selector(self):
+        curr_page = self.navigator.get_curr_page()
+        if curr_page == None:
+            return
+        try:
+            curr_doc_size = self.document().pagePointSize(curr_page)
+        except Exception as e:
+            print(f"Error getting page size: {e}")
+            curr_doc_size = None
+        selector_state = {
+            "current_page": curr_page,
+            "current_zoom_factor": self.effectiveZoomFactor(),
+            "current_zoom_custom": self.zoomFactor(),
+            "current_zoom_mode": self.zoomMode(),
+            "current_document_size": curr_doc_size,
+            "current_viewport": self.viewport().size(),
+            "w_offset": float(self.horizontalScrollBar().value()),
+            "h_offset": float(self.verticalScrollBar().value()),
+            "current_margins": float(self.documentMargins().left()),
+        }
+        self.text_selector.set_curr_state(selector_state)
