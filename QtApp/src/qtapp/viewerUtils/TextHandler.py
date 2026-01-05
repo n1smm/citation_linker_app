@@ -5,6 +5,13 @@ from    qtapp.qtToPymuUtils             import  rect_py_to_qt, rect_qt_to_py, px
 
 
 class TextHandler(QObject):
+    def _del__(self):
+        if self.document:
+            try:
+                self.document.close()
+            except Exception:
+                pass
+
     def __init__(self, parent=None):
         super().__init__(parent)
 
@@ -17,8 +24,9 @@ class TextHandler(QObject):
         self.page = 0
         self.selected_text = ""
         self.translated_rect = pymupdf.Rect()
-
-
+        self.article_cache = []
+        self.delimiters = []
+        self.special_cases = []
 
         ### signals
 
@@ -35,9 +43,12 @@ class TextHandler(QObject):
     def find_text(self, page_idx, rectF):
         self.page = self.document.load_page(page_idx)
         rect_fitz = rect_qt_to_py(rectF)
-        selected_text = self.page.get_text("text", clip=rect_fitz)
+        self.selected_text = self.page.get_text("text", clip=rect_fitz)
+        print("delimiters:", self.delimiters)
         print("fitz rect: ", rect_fitz)
-        print("fitz text: ", selected_text)
+        print("fitz text: ", self.selected_text)
+        print("delimiters:", self.delimiters)
+        print("special_cases", self.special_cases)
 
     # TODO add uri links BREAKING
     def get_all_links(self, page_idx, zoom_factor):
@@ -94,7 +105,7 @@ class TextHandler(QObject):
                     annot_data['uri'] = link.get('uri', None)
 
             annotations.append(annot_data)
-            print(annot_data)
+            # print(annot_data)
 
 
         # print("\n" + "="*60)

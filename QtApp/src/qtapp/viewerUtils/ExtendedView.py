@@ -1,12 +1,14 @@
 from    PySide6.QtPdfWidgets            import  QPdfView
 from    PySide6.QtPdf                   import  QPdfPageNavigator
-from    PySide6.QtCore                  import  Qt, QMargins, QRect, QRectF, QTimer
+from    PySide6.QtCore                  import  Qt, QMargins, QRect, QRectF, QTimer, QPoint
 from    PySide6.QtGui                   import  QKeyEvent, QMouseEvent, QGuiApplication, QPainter, QPen, QColor
 
-from    qtapp.viewerUtils.TextSelector  import TextSelector
-from    qtapp.viewerUtils.TextHandler   import TextHandler
-from    qtapp.viewerUtils.Navigator     import PdfNavigator
-from    qtapp.viewerUtils.ZoomSelector  import ZoomSelector
+from    qtapp.viewerUtils.TextSelector  import  TextSelector
+from    qtapp.viewerUtils.TextHandler   import  TextHandler
+from    qtapp.viewerUtils.Navigator     import  PdfNavigator
+from    qtapp.viewerUtils.ZoomSelector  import  ZoomSelector
+from    qtapp.components.PopupWidget    import  PopupWidget
+from    qtapp.qtToPymuUtils             import  dpi_to_px
 
 
 # extended QPdfView with extra functionality:
@@ -28,6 +30,9 @@ class   ExtendedView(QPdfView):
         self.selection_rect = None
         self.current_annotations = None
         self.current_links = None
+        self.first_page = None
+        self.last_page = None
+        self.curr_page_rect = None
         print("dpi: ", dpi, "transform_factor: ", self.zoom_transform_factor)
         print("physical dpi: ", physical_dpi)
 
@@ -36,6 +41,7 @@ class   ExtendedView(QPdfView):
         self.text_handler = TextHandler(self)
         self.navigator = PdfNavigator(self)
         self.zoom_selector = ZoomSelector(self)
+        self.popup = PopupWidget(self, QPoint(0,0), {"bibliography", "special_case"})
         self.setZoomMode(QPdfView.ZoomMode.FitInView)
 
 
@@ -49,6 +55,8 @@ class   ExtendedView(QPdfView):
 
         ### signals
         self.text_selector.rect_changed.connect(self.color_selection)
+        self.popup.button_objs["bibliography"].clicked.connect(self.handle_bibliography)
+        self.popup.button_objs["special_case"].clicked.connect(self.handle_special_case)
 
         ### TODO do a signal that will send curr page on change to text_selector
 
@@ -62,12 +70,14 @@ class   ExtendedView(QPdfView):
         super().paintEvent(event)
         self.update_text_selector()
         self.paint_annotiations()
+        self.paint_pages()
         if self.selection_rect:
             painter = QPainter(self.viewport())
             color = QColor(255, 255, 0, 100)
             painter.setBrush(color)
             painter.setPen(Qt.NoPen)
             painter.drawRect(self.selection_rect)
+            painter.end()
 
 
     ### --- interaction events ----
@@ -140,10 +150,60 @@ class   ExtendedView(QPdfView):
             self.navigator.page_back()
         elif event.key() == Qt.Key_Right:
             self.navigator.page_forward()
+        elif event.key() == Qt.Key_Space:
+            self.select_page()
         else:
             super().keyPressEvent(event)
 
     ### methods
+    def select_page(self):
+      curr_page = self.navigator.get_curr_page()
+
+      if self.first_page is None:
+          self.first_page = curr_page
+          print(f"First page selected: {curr_page}")
+
+      elif curr_page == self.first_page:
+          print(f"Clearing selection for page {curr_page}")
+          if self.curr_page_rect:
+              self.viewport().update(self.curr_page_rect)
+          self.first_page = None
+          self.last_page = None
+          self.curr_page_rect = None
+
+      elif curr_page > self.first_page:
+          self.last_page = curr_page
+          article_info = {"first": self.first_page, "last": self.last_page}
+          print(f"Article saved: pages {self.first_page} to {self.last_page}")
+          self.text_handler.article_cache.append(article_info)
+
+          # Clear and reset
+          if self.curr_page_rect:
+              self.viewport().update(self.curr_page_rect)
+          self.first_page = None
+          self.last_page = None
+          self.curr_page_rect = None
+
+      else:
+          print(f"Warning: page {curr_page} is lower than first page {self.first_page}")
+
+      self.viewport().update()
+
+
+    def handle_bibliography(self):
+        curr_text = self.text_handler.selected_text
+        self.text_handler.delimiters.append(curr_text.strip())
+        self.popup.hide()
+        self.clear_selection()
+        pass
+
+    def handle_special_case(self):
+        curr_text = self.text_handler.selected_text
+        self.text_handler.special_cases.append(curr_text.strip())
+        self.popup.hide()
+        self.clear_selection()
+        pass
+
 
     ### --- paint methods -----
 
@@ -173,6 +233,27 @@ class   ExtendedView(QPdfView):
 
         painter.end()
 
+    def paint_pages(self):
+        curr_page = self.navigator.get_curr_page()
+        painter = QPainter(self.viewport())
+        page_size = self.document().pagePointSize(curr_page)
+        zoom = self.effectiveZoomFactor()
+        page_rect = QRect(0, 0, int(page_size.width() * zoom), int(page_size.height() * zoom))
+        rect = self.text_selector.page_to_viewport_coords(page_rect)
+        if curr_page == self.first_page or curr_page == self.last_page:
+            self.curr_page_rect = rect
+            color = QColor(255, 0, 0, 100)
+            painter.setBrush(color)
+            painter.setPen(Qt.NoPen)
+            painter.drawRect(rect)
+        for obj in self.text_handler.article_cache:
+            for value in obj.values():
+                if curr_page == value:
+                    color = QColor(0, 255, 0, 100)
+                    painter.setBrush(color)
+                    painter.drawRect(rect)
+        painter.end()
+
 
     def draw_underline(self, painter, rect, annot):
         color = QColor(*annot.get("color", [0,0,225]))
@@ -197,14 +278,22 @@ class   ExtendedView(QPdfView):
         painter.drawRect(rect)
 
     def color_selection(self, rect):
-        self.selection_rect = None
+        if self.selection_rect:
+            self.viewport().update(self.selection_rect)
+            # self.update()
+
         self.selection_rect = rect
-        self.update()
+        popup_pos = self.viewport().mapToGlobal(rect.bottomLeft())
+        # popup_pos = self.viewport().mapToParent(rect.bottomLeft())
+        self.popup.show_at(popup_pos)
         
 
     def clear_selection(self):
+        if self.selection_rect:
+            self.viewport().update(self.selection_rect)
         self.selection_rect = None
         self.update()
+        self.popup.hide()
 
     def set_selection_enabled(self, enabled):
         self.selection_enabled = enabled
@@ -219,8 +308,8 @@ class   ExtendedView(QPdfView):
         viewport = self.viewport().size()
 
         zoom_trasfrom_factor = 2.07433264754424 / 1.52
-        print("zoom transform factor: ", zoom_trasfrom_factor)
-        print("self zoom transform: ", self.zoom_transform_factor)
+        # print("zoom transform factor: ", zoom_trasfrom_factor)
+        # print("self zoom transform: ", self.zoom_transform_factor)
         zoom_trasfrom_factor = self.zoom_transform_factor
         
 
