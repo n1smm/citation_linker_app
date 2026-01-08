@@ -115,8 +115,6 @@ class PdfNavigator(QWidget):
         if self.nav:
             page = self.nav.currentPage()
             location = self.nav.currentLocation()
-            print("location: ", location)
-            print("page: ", page)
             next_page = min(page + 1, self.page_display.maximum())
             self.nav.jump(next_page, location)
             self.update_page_display(next_page)
@@ -127,8 +125,6 @@ class PdfNavigator(QWidget):
         if self.nav:
             page = self.nav.currentPage()
             location = self.nav.currentLocation()
-            print("location: ", location)
-            print("page: ", page)
             prev_page = max(page - 1, self.page_display.minimum())
             self.nav.jump(prev_page, location)
             self.update_page_display(prev_page)

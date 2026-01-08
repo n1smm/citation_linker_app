@@ -1,6 +1,6 @@
 from    PySide6.QtPdfWidgets            import  QPdfView
 from    PySide6.QtPdf                   import  QPdfPageNavigator
-from    PySide6.QtCore                  import  Qt, QMargins, QRect, QRectF, QTimer, QPoint
+from    PySide6.QtCore                  import  Qt, QMargins, QRect, QRectF, QTimer, QPoint, Slot
 from    PySide6.QtGui                   import  QKeyEvent, QMouseEvent, QGuiApplication, QPainter, QPen, QColor
 
 from    qtapp.viewerUtils.TextSelector  import  TextSelector
@@ -49,6 +49,8 @@ class   ExtendedView(QPdfView):
         self.selection_enabled = False
         self.setPageSpacing(0)
         self.setDocumentMargins(QMargins(10,10,10,10))
+        self.popup.assign_alt_buttons({"delete", "change"})
+        self.popup.switch_buttons_to(alt=False)
         # self.setDocumentMargins(QMargins(5,5,5,5))
         self.navigator.hide()
         self.zoom_selector.hide()
@@ -57,9 +59,8 @@ class   ExtendedView(QPdfView):
         self.text_selector.rect_changed.connect(self.color_selection)
         self.popup.button_objs["bibliography"].clicked.connect(self.handle_bibliography)
         self.popup.button_objs["special_case"].clicked.connect(self.handle_special_case)
-
-        ### TODO do a signal that will send curr page on change to text_selector
-
+        self.popup.alt_buttons["delete"].clicked.connect(lambda: (print("delete"),self.popup.hide()))
+        self.popup.alt_buttons["change"].clicked.connect(lambda: (print("change"), self.popup.hide()))
 
 
     ### event overrides
@@ -82,8 +83,12 @@ class   ExtendedView(QPdfView):
 
     ### --- interaction events ----
 
-    def mousePressEvent(self, event):
+    def handleAnnots(self, event):
+        popup_pos = self.viewport().mapToGlobal(event.pos())
+        # popup_pos = self.viewport().mapToParent(rect.bottomLeft())
+        self.popup.show_at(popup_pos, alt=True)
 
+    def mousePressEvent(self, event):
         if self.selection_enabled and event.button() == Qt.LeftButton:
             self.clear_selection()
             self.update_text_selector()
@@ -91,14 +96,30 @@ class   ExtendedView(QPdfView):
             if self.current_links and self.current_annotations:
                 for annot in self.current_annotations:
                     screen_rect = self.text_selector.page_to_viewport_coords(annot["rect"])
-                    if screen_rect.contains(event.pos()):
-                        print ("INTERSECTIOON")
                 for link in self.current_links:
                     screen_rect = self.text_selector.page_to_viewport_coords(link["from"])
                     if screen_rect.contains(event.pos()):
-                        print("INTERSECTIOON LINK")
+                        print("INTERSECTIOON LINK Left click")
                         print("to filed", link["to_dpi"])
                         self.navigator.jump_to(link["page"], link["to_dpi"])
+
+        elif event.button() == Qt.RightButton:
+            self.clear_selection()
+            self.update_text_selector()
+            if self.current_links and self.current_annotations:
+                for annot in self.current_annotations:
+                    screen_rect = self.text_selector.page_to_viewport_coords(annot["rect"])
+                    if screen_rect.contains(event.pos()):
+                        print ("INTERSECTION")
+                        self.handleAnnots(event)
+                for link in self.current_links:
+                    screen_rect = self.text_selector.page_to_viewport_coords(link["from"])
+                    if screen_rect.contains(event.pos()):
+                        print("INTERSECTION LINK")
+                        print("to field", link["to_dpi"])
+                        self.handleAnnots(event)
+            event.accept()
+            return
         else:
             super().mousePressEvent(event)
 
@@ -110,6 +131,10 @@ class   ExtendedView(QPdfView):
             super().mouseMoveEvent(event)
 
     def mouseReleaseEvent(self, event):
+        if event.button() == Qt.RightButton:
+            event.accept()
+            return
+
         if self.selection_enabled and self.text_selector.selecting:
             self.text_selector.handleMouseRelease(event)
         else:
@@ -189,24 +214,53 @@ class   ExtendedView(QPdfView):
 
       self.viewport().update()
 
-
+    @Slot()
     def handle_bibliography(self):
         curr_text = self.text_handler.selected_text
         self.text_handler.delimiters.append(curr_text.strip())
         self.popup.hide()
         self.clear_selection()
-        pass
+        if self.selection_rect:
+            self.viewport().update(self.selection_rect)
 
+    @Slot()
     def handle_special_case(self):
         curr_text = self.text_handler.selected_text
         self.text_handler.special_cases.append(curr_text.strip())
         self.popup.hide()
         self.clear_selection()
-        pass
+        if self.selection_rect:
+            self.viewport().update(self.selection_rect)
+
+    def clear_selection(self):
+        if self.selection_rect:
+            self.viewport().update(self.selection_rect)
+        self.selection_rect = None
+        self.update()
+        self.popup.hide()
+
+    def set_selection_enabled(self, enabled):
+        self.selection_enabled = enabled
 
 
     ### --- paint methods -----
 
+    @Slot()
+    def color_selection(self, rect):
+        if self.selection_rect:
+            self.viewport().update(self.selection_rect)
+            # self.update()
+
+        self.selection_rect = rect
+        popup_pos = self.viewport().mapToGlobal(rect.bottomLeft())
+        # popup_pos = self.viewport().mapToParent(rect.bottomLeft())
+        self.popup.switch_buttons_to(alt=False)
+        self.popup.show_at(popup_pos)
+        if self.selection_rect:
+            self.viewport().update(self.selection_rect)
+        
+
+   
     def paint_annotiations(self):
         painter = QPainter(self.viewport())
         painter.setRenderHint(QPainter.Antialiasing)
@@ -277,26 +331,6 @@ class   ExtendedView(QPdfView):
         painter.setPen(pen)
         painter.drawRect(rect)
 
-    def color_selection(self, rect):
-        if self.selection_rect:
-            self.viewport().update(self.selection_rect)
-            # self.update()
-
-        self.selection_rect = rect
-        popup_pos = self.viewport().mapToGlobal(rect.bottomLeft())
-        # popup_pos = self.viewport().mapToParent(rect.bottomLeft())
-        self.popup.show_at(popup_pos)
-        
-
-    def clear_selection(self):
-        if self.selection_rect:
-            self.viewport().update(self.selection_rect)
-        self.selection_rect = None
-        self.update()
-        self.popup.hide()
-
-    def set_selection_enabled(self, enabled):
-        self.selection_enabled = enabled
 
         
     ### --- zoom factor translation ---

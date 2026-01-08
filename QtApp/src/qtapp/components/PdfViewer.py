@@ -68,7 +68,7 @@ class PdfViewer(QWidget):
 
     def on_page_change(self, page_idx):
         page = self.document.getAllText(page_idx)
-        print(f" page: {page_idx}, has rect: {page.boundingRectangle()}")
+        # print(f" page: {page_idx}, has rect: {page.boundingRectangle()}")
 
     def change_zoom_mode(self, mode):
         self.view.setZoomMode(mode)

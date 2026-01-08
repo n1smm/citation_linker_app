@@ -27,6 +27,8 @@ class TextHandler(QObject):
         self.article_cache = []
         self.delimiters = []
         self.special_cases = []
+        self.curr_annots = []
+        self.curr_links = []
 
         ### signals
 
@@ -55,8 +57,9 @@ class TextHandler(QObject):
         doc = self.document
         page = doc[page_idx]
         links = []
+        self.curr_links = page.get_links()
 
-        for link in page.get_links():
+        for link in self.curr_links:
             qt_rectF = rect_py_to_qt(link["from"])
             qt_rect = dpi_to_px({
                                 "rect": qt_rectF,
@@ -78,11 +81,12 @@ class TextHandler(QObject):
         doc = self.document
         page = doc[page_idx]
         annotations = []
+        self.curr_annots = page.annots()
 
         # print("\n" + "="*60)
         # print("page annotations")
         # print("="*60)
-        for annot in page.annots():
+        for annot in self.curr_annots:
             qt_rectF = rect_py_to_qt(annot.rect)
             qt_rect = dpi_to_px({
                                 "rect": qt_rectF,
