@@ -56,8 +56,10 @@ class TextHandler(QObject):
     def get_all_links(self, page_idx, zoom_factor):
         doc = self.document
         page = doc[page_idx]
+        self.page = page
         links = []
         self.curr_links = page.get_links()
+
 
         for link in self.curr_links:
             qt_rectF = rect_py_to_qt(link["from"])
@@ -76,10 +78,11 @@ class TextHandler(QObject):
             links.append(link_data)
         return links
 
-
     def get_all_annotations(self, page_idx, zoom_factor):
         doc = self.document
+        self.curr_page_idx = page_idx
         page = doc[page_idx]
+        self.page = page
         annotations = []
         self.curr_annots = page.annots()
 
@@ -93,8 +96,8 @@ class TextHandler(QObject):
                                 "current_zoom": zoom_factor
                                 })
             annot_data = {
-                'type': annot.type[1],  # e.g., 'Underline', 'Highlight', 'Link'
-                'rect': qt_rect,  # pymupdf.Rect in PDF coordinates
+                'type': annot.type[1],
+                'rect': qt_rect,
                 'color': annot.colors.get('stroke', None),
                 'opacity': annot.opacity,
                 'border': annot.border,
@@ -104,7 +107,7 @@ class TextHandler(QObject):
             if annot.type[0] == pymupdf.PDF_ANNOT_LINK:
                 link = annot.link
                 if link:
-                    annot_data['link_type'] = link['kind']  # LINK_GOTO or LINK_URI
+                    annot_data['link_type'] = link['kind']
                     annot_data['page_dest'] = link.get('page', None)
                     annot_data['uri'] = link.get('uri', None)
 
@@ -117,3 +120,57 @@ class TextHandler(QObject):
 
 
         return annotations
+
+    def get_annot_from_idx(self, annot_idx):
+        
+        for idx, annot in enumerate(self.page.annots()):
+            if idx == annot_idx:
+                return annot
+        return None
+
+
+    def annot_action(self, annot_idx, action, new_rect=None):
+        annot = self.get_annot_from_idx(annot_idx)
+
+        if not annot:
+            return
+
+        if action == "delete":
+            self.page.delete_annot(annot)
+            # annot.delete()
+            print(f"Annotation {annot_idx} deleted.")
+        elif action == "toggle_type":
+            if annot.type[1] == "Underline":
+                annot.set_info(type=pymupdf.PDF_ANNOT_HIGHLIGHT)
+                print(f"Annotation {annot_idx} changed to Highlight.")
+            elif annot.type[1] == "Highlight":
+                annot.set_info(type=pymupdf.PDF_ANNOT_UNDERLINE)
+                print(f"Annotation {annot_idx} changed to Underline.")
+            else:
+                print("Annotation type is not Underline or Highlight.")
+        elif action == "update_rect" and new_rect is not None:
+            annot.set_rect(new_rect)
+            print(f"Annotation {annot_idx} rect updated.")
+        else:
+            print("Invalid action or missing new_rect.")
+
+
+    def link_action(self, link_idx, action, new_dest=None):
+        link = self.curr_links[link_idx]
+
+        if not link:
+            return
+
+        if action == "delete":
+            self.page.delete_link(link)
+        elif action == "change":
+            link["to"] = new_dest
+            self.page.update_link(link)
+
+    def get_config_data(self):
+        return {
+                "article_cache": self.article_cache,
+                "special_cases": self.special_cases,
+                "delimiters" : self.delimiters
+                }
+

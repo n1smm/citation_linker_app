@@ -10,6 +10,8 @@ from    qtapp.viewerUtils.ZoomSelector  import  ZoomSelector
 from    qtapp.components.PopupWidget    import  PopupWidget
 from    qtapp.qtToPymuUtils             import  dpi_to_px
 
+from    functools                       import  partial
+
 
 # extended QPdfView with extra functionality:
 # text selector, text_handler, navigator and zoom selector
@@ -28,11 +30,13 @@ class   ExtendedView(QPdfView):
         ### member declarations
         self.zoom_transform_factor = dpi / 72.0
         self.selection_rect = None
-        self.current_annotations = None
-        self.current_links = None
         self.first_page = None
         self.last_page = None
+        self.current_annotations = None
+        self.current_links = None
         self.curr_page_rect = None
+        self.curr_annot_idx = 0
+        self.curr_annot_type = None
         print("dpi: ", dpi, "transform_factor: ", self.zoom_transform_factor)
         print("physical dpi: ", physical_dpi)
 
@@ -59,7 +63,7 @@ class   ExtendedView(QPdfView):
         self.text_selector.rect_changed.connect(self.color_selection)
         self.popup.button_objs["bibliography"].clicked.connect(self.handle_bibliography)
         self.popup.button_objs["special_case"].clicked.connect(self.handle_special_case)
-        self.popup.alt_buttons["delete"].clicked.connect(lambda: (print("delete"),self.popup.hide()))
+        self.popup.alt_buttons["delete"].clicked.connect(partial(self.on_annot_event, "delete"))
         self.popup.alt_buttons["change"].clicked.connect(lambda: (print("change"), self.popup.hide()))
 
 
@@ -81,12 +85,44 @@ class   ExtendedView(QPdfView):
             painter.end()
 
 
+
+
     ### --- interaction events ----
 
-    def handleAnnots(self, event):
+    def handle_annots(self, event, annot_idx, type="annot"):
         popup_pos = self.viewport().mapToGlobal(event.pos())
-        # popup_pos = self.viewport().mapToParent(rect.bottomLeft())
         self.popup.show_at(popup_pos, alt=True)
+        self.curr_annot_idx = annot_idx
+        if type == "annot":
+            self.curr_annot_type = "annot"
+        else:
+            self.curr_annot_type = "link"
+
+            
+    def on_annot_event(self, action):
+        if  self.curr_annot_type == "annot":
+            print("action:", action)
+            new_rect = None
+            self.text_handler.annot_action(
+                    self.curr_annot_idx,
+                    action,
+                    new_rect
+                    )
+
+            update_rect = (self.text_selector.page_to_viewport_coords
+                (self.current_annotations[self.curr_annot_idx]["rect"]))
+            
+        elif self.curr_annot_type == "link":
+            new_dest = None
+            self.text_handler.link_action(self.curr_annot_idx, action, new_dest)
+            update_rect = (self.text_selector.page_to_viewport_coords
+                (self.current_links[self.curr_annot_idx]["from"]))
+            update_rect.setHeight(update_rect.height() + 2)
+            update_rect.setWidth(update_rect.width() + 2)
+            update_rect.setX(update_rect.x() - 1)
+            update_rect.setY(update_rect.y() -1)
+        self.viewport().update(update_rect)
+        self.popup.hide()
 
     def mousePressEvent(self, event):
         if self.selection_enabled and event.button() == Qt.LeftButton:
@@ -107,17 +143,25 @@ class   ExtendedView(QPdfView):
             self.clear_selection()
             self.update_text_selector()
             if self.current_links and self.current_annotations:
-                for annot in self.current_annotations:
+                for idx, annot in enumerate(self.current_annotations):
                     screen_rect = self.text_selector.page_to_viewport_coords(annot["rect"])
                     if screen_rect.contains(event.pos()):
                         print ("INTERSECTION")
-                        self.handleAnnots(event)
-                for link in self.current_links:
+                        popup_pos = self.viewport().mapToGlobal(event.pos())
+                        self.popup.show_at(popup_pos, alt=True)
+                        self.curr_annot_type = "annot"
+                        self.curr_annot_idx = idx
+                        event.accept()
+                        return
+                for idx, link in enumerate(self.current_links):
                     screen_rect = self.text_selector.page_to_viewport_coords(link["from"])
                     if screen_rect.contains(event.pos()):
                         print("INTERSECTION LINK")
                         print("to field", link["to_dpi"])
-                        self.handleAnnots(event)
+                        popup_pos = self.viewport().mapToGlobal(event.pos())
+                        self.popup.show_at(popup_pos, alt=True)
+                        self.curr_annot_idx = idx
+                        self.curr_annot_type = "link"
             event.accept()
             return
         else:

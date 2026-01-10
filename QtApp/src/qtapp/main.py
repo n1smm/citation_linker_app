@@ -23,7 +23,7 @@ class CitationLinkerApp(QMainWindow):
         self.setCentralWidget(container)
         self.document = QPdfDocument(self)
 
-        self.fileManager = FileManager(True, self)
+        self.fileManager = FileManager(upload=True, pdf=True, parent=self)
         self.initialViewer = PdfViewer(self)
 
         self.upload_path = ""

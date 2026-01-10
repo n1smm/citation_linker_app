@@ -14,7 +14,7 @@ class FileManager(QWidget):
         process_finished = Signal()
         file_path_extracted = Signal()
 
-        def __init__(self, upload, parent=None):
+        def __init__(self, upload, pdf, parent=None):
             super().__init__(parent)
             print("initig the file manager")
 
@@ -29,14 +29,18 @@ class FileManager(QWidget):
             self.dialog = QFileDialog()
             self.file_path = ""
             self.upload = upload
+            self.pdf = pdf
 
             if upload:
-                self.file_button = QPushButton("upload file")
+                self.file_button = QPushButton("upload file/path")
             else:
                 self.file_button = QPushButton("save file")
-
-
-            ### initializations
+            if pdf:
+                self.msg = "open PDF file"
+                self.search_params = "PDF Files (*.pdf);;All Files (*)"
+            else:
+                self.msg = "open the path/file"
+                self.search_params = "All Files (*)"
 
 
             ### options
@@ -62,9 +66,9 @@ class FileManager(QWidget):
         def open_file(self):
             file_path, _ = self.dialog.getOpenFileName(
                     self,
-                    "open PDF file",
+                    self.msg,
                     "",
-                    "PDF Files (*.pdf);;All Files (*)"
+                    self.search_params
                     )
             if file_path:
                 print("upload path: ", file_path)
@@ -108,6 +112,11 @@ class FileManager(QWidget):
         # get current status : upload/save
         def get_manager_status(self):
             return self.upload
+
+        def reset_manager(self, upload=True, pdf=True):
+            self.file_path = ""
+            self.upload = upload
+            self.pdf = pdf
 
 
         # resets the manager
