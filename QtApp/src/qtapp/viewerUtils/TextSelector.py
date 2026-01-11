@@ -17,6 +17,7 @@ class TextSelector(QObject):
         super().__init__(parent) 
         ### member declarations
         self.parent = parent
+        print("selector: ", parent)
         self.selecting = False
         self.origin = QPoint()
         self.rubberBand = QRubberBand(QRubberBand.Rectangle, parent)
@@ -107,7 +108,7 @@ class TextSelector(QObject):
     
     def normalize_pixel_to_page(self, geometry):
         rect = QRect(geometry)
-        viewport_pos = self.parent.viewport().pos()
+        viewport_pos = self.parent.view.viewport().pos()
         viewport_x = float(rect.x()) - float(viewport_pos.x())
         viewport_y = float(rect.y()) - float(viewport_pos.y())
 

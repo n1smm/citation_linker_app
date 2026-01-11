@@ -6,6 +6,7 @@ from    pathlib                         import  Path
 from    PySide6.QtCore                  import  Qt, QFile, Slot, Signal
 from    PySide6.QtWidgets               import  (QWidget,
                                                  QFileDialog,
+                                                 QInputDialog,
                                                  QPushButton,
                                                  QHBoxLayout,
                                                  QVBoxLayout,
@@ -22,11 +23,13 @@ from    PySide6.QtWidgets               import  (QWidget,
 from    qtapp.components.FileManager    import  FileManager
 
 class DocConfig(QWidget):
+    list_widget_changed = Signal(str, QListWidget)
 
     def __init__(self, parent=None):
         super().__init__(parent)
 
         ### member declarations
+        self.parent = parent
         self.user_shell = None
         self.config_path = None
         self.file_path = ""
@@ -54,6 +57,9 @@ class DocConfig(QWidget):
         self.get_config_path()
         if self.config_path and os.path.exists(self.config_path):
             self.load_config()
+
+        #signals
+        self.list_widget_changed.connect(self.list_widget_update)
 
     ### ui init
     def init_ui(self):
@@ -251,23 +257,66 @@ class DocConfig(QWidget):
         btn_layout = QHBoxLayout()
         add_btn = QPushButton("Add")
         remove_btn = QPushButton("Remove")
+        change_btn = QPushButton("Change")
+        up_btn = QPushButton("▲")
+        down_btn= QPushButton("▼")
+        up_btn.setMaximumWidth(30)
+        down_btn.setMaximumWidth(30)
 
         def add_item():
-            from PySide6.QtWidgets import QInputDialog
             text, ok = QInputDialog.getText(self, f"Add {label_text}", "Enter value:")
             if ok and text:
                 list_widget.addItem(text)
+                self.list_widget_changed.emit(field_name, list_widget)
 
         def remove_item():
             current = list_widget.currentRow()
             if current >= 0:
                 list_widget.takeItem(current)
+                self.list_widget_changed.emit(field_name, list_widget)
+
+        def change_item():
+            current = list_widget.currentRow()
+            if current >= 0:
+                old_text = list_widget.item(current).text()
+                text, ok = QInputDialog.getText(self,
+                                                f"Change {label_text}",
+                                                "Edit value:",
+                                                text=old_text)
+                if ok and text:
+                    list_widget.item(current).setText(text)
+                    self.list_widget_changed.emit(field_name, list_widget)
+
+        def move_up():
+            current = list_widget.currentRow()
+            if current > 0:
+                item = list_widget.takeItem(current)
+                list_widget.insertItem(current - 1, item)
+                list_widget.setCurrentRow(current -1)
+                self.list_widget_changed.emit(field_name, list_widget)
+
+        def move_down():
+            current = list_widget.currentRow()
+            if 0 <= current < list_widget.count() -1:
+                item = list_widget.takeItem(current)
+                list_widget.insertItem(current + 1, item)
+                list_widget.setCurrentRow(current + 1)
+                self.list_widget_changed.emit(field_name, list_widget)
+            
+
 
         add_btn.clicked.connect(add_item)
         remove_btn.clicked.connect(remove_item)
+        change_btn.clicked.connect(change_item)
+        up_btn.clicked.connect(move_up)
+        down_btn.clicked.connect(move_down)
 
         btn_layout.addWidget(add_btn)
         btn_layout.addWidget(remove_btn)
+        btn_layout.addWidget(change_btn)
+        btn_layout.addWidget(up_btn)
+        btn_layout.addWidget(down_btn)
+
         list_layout.addLayout(btn_layout)
 
         layout.addLayout(list_layout, row, 1)
@@ -321,6 +370,8 @@ class DocConfig(QWidget):
         self.config_path = self.file_manager.get_file_path()
         self.file_manager.reset_manager(upload=True, pdf=False)
         self.file_manager.hide()
+
+
 
     def parse_config_line(self, line):
         """Parse a single config line"""
@@ -465,10 +516,67 @@ class DocConfig(QWidget):
 
         QMessageBox.information(self, "Cleared", "All fields cleared. Configure and save as needed.")
 
-    def set_config_data(self, article_cache=[], special_cases=None, delimiter=None):
-        self.article_cache = article_cache
-        self.special_cases = special_cases
-        self.delimiters = delimiter
+    def article_deconstruct_data(self, data):
+        full_list = []
+        for pair in data:
+            first = pair["first"]
+            last = pair["last"]
+            together= f"{first}:{last}"
+            full_list.append(together)
+        return full_list
+
+
+
+    def set_data_from_view(self, config_data=None):
+        if config_data:
+            if config_data["article_cache"]:
+                self.article_cache = config_data["article_cache"]
+                article_list = self.article_deconstruct_data(self.article_cache)
+                self.article_breaks_list.clear()
+                self.article_breaks_list.addItems(article_list)
+
+
+            if config_data["special_cases"]:
+                self.special_cases = config_data["special_cases"]
+                self.special_case_list.clear()
+                for item in self.special_cases:
+                    self.special_case_list.addItem(item)
+
+            if config_data["delimiters"]:
+                self.delimiters = config_data["delimiters"]
+                self.delimiter_list.clear()
+                for item in self.delimiters:
+                    self.delimiter_list.addItem(item)
+                     
+        self.update()
+
+    def list_widget_update(self, field_name, widget):
+        if field_name == "SPECIAL_CASE":
+            self.special_cases.clear()
+            for i in range(self.special_case_list.count()):
+                self.special_cases.append(self.special_case_list.item(i).text())
+            self.parent.text_handler.special_cases = self.special_cases
+
+        elif field_name == "BIBLIOGRAPHY_DELIMITER":
+            self.delimiters.clear()
+            for i in range(self.delimiter_list.count()):
+                self.delimiters.append(self.delimiter_list.item(i).text())
+            self.parent.text_handler.delimiters = self.delimiters
+
+        elif field_name == "ARTICLE_BREAKS":
+            self.article_cache.clear()
+            for i in range(self.delimiter_list.count()):
+                tokens = self.article_breakes_list.item(i).text().split(":")
+                pair = {
+                        "first": tokens[0],
+                        "last": tokens[1]
+                        }
+                self.article.cache.append(pair)
+            self.parent.text_handler.article_cache = self.article_cache
+                    
+
+
+
 
 
 

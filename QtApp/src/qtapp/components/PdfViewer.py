@@ -2,6 +2,7 @@ from    PySide6.QtCore                  import  Qt, QFile, Slot
 from    PySide6.QtWidgets               import  (QWidget,
                                                 QPushButton,
                                                 QHBoxLayout,
+                                                QRubberBand,
                                                 QVBoxLayout)
 #qt pdf imports
 from    PySide6.QtPdf                   import  QPdfDocument#, QPdfPageNavigator, QPdfPageRenderer
@@ -48,6 +49,7 @@ class PdfViewer(QWidget):
         self.view.setPageMode(QPdfView.SinglePage)
         self.view.hide()
         self.view.set_selection_enabled(False)
+        self.text_selector.rubberBand =  QRubberBand(QRubberBand.Rectangle, self.view)
 
         ### signals
         self.zoom_selector.zoom_mode_changed.connect(self.change_zoom_mode)

@@ -1,6 +1,7 @@
 import  sys
 from    PySide6.QtCore                  import  Slot
 from    PySide6.QtWidgets               import  (QApplication,
+                                                 QMessageBox,
                                                  QPushButton,
                                                  QMainWindow,
                                                  QWidget,
@@ -31,7 +32,11 @@ class CitationLinkerApp(QMainWindow):
         self.document = QPdfDocument(self)
         self.text_handler = TextHandler(self)
         self.initial_viewer = PdfViewer(parent=self, textHandler=self.text_handler)
+
         self.configToggle = QPushButton("config")
+        self.startProcess = QPushButton("start linking")
+        self.configToggle.setMaximumWidth(200)
+        self.startProcess.setMaximumWidth(200)
 
         ### options
         self.text_handler.set_viewer(self.initial_viewer)
@@ -39,10 +44,14 @@ class CitationLinkerApp(QMainWindow):
 
         ### signals
         self.configToggle.toggled.connect(self.toggle_config)
+        self.startProcess.clicked.connect(self.start_linking_process)
 
         ### appending
+        self.horizontal_bar.setContentsMargins(200, 2, 200, 2)
+        self.horizontal_bar.setSpacing(20)
         self.horizontal_bar.addWidget(self.configToggle)
         self.horizontal_bar.addWidget(self.initial_viewer.zoom_selector)
+        self.horizontal_bar.addWidget(self.startProcess)
 
         self.layout.addLayout(self.horizontal_bar)
         self.layout.addWidget(self.initial_viewer)
@@ -60,11 +69,30 @@ class CitationLinkerApp(QMainWindow):
         if checked:
             self.configToggle.setText("viewer")
             self.initial_viewer.view.hide()
+            update_data = self.text_handler.get_config_data()
+            self.document_config.set_data_from_view(update_data)
             self.document_config.show()
         else:
             self.configToggle.setText("config")
             self.document_config.hide()
             self.initial_viewer.view.show()
+
+    def start_linking_process(self):
+        update_data = self.text_handler.get_config_data()
+        print(update_data)
+        self.document_config.set_data_from_view(update_data)
+        reply = QMessageBox.information(self, "Are you sure?",
+                                ("Are you sure?,\n"
+                                 "otherwise check again\n"
+                                 "if the configuration is okay."),
+                                QMessageBox.Yes | QMessageBox.No)
+        if reply == QMessageBox.Yes:
+            print(reply)
+        else:
+            print(reply)
+            #
+
+        
 
 def main():
     if len(sys.argv) > 1:

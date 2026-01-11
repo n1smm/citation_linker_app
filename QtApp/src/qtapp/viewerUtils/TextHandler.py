@@ -1,5 +1,5 @@
 import  pymupdf
-from    PySide6.QtCore                  import  QPointF, QPoint, QRect, QSize, QObject
+from    PySide6.QtCore                  import  QPointF, QPoint, QRect, QSize, QObject, Slot
 
 from    qtapp.qtToPymuUtils             import  rect_py_to_qt, rect_qt_to_py, px_to_dpi, dpi_to_px, point_py_to_qt, point_to_px
 
@@ -170,6 +170,7 @@ class TextHandler(QObject):
             link["to"] = new_dest
             self.page.update_link(link)
 
+    @Slot()
     def get_config_data(self):
         return {
                 "article_cache": self.article_cache,
