@@ -17,7 +17,13 @@ from    functools                       import  partial
 # text selector, text_handler, navigator and zoom selector
 # overridden mouse, paint events
 class   ExtendedView(QPdfView):
-    def __init__(self, parent=None):
+    def __init__(self, 
+                 parent=None,
+                 textHandler=None,
+                 textSelector=None,
+                 navigator=None,
+                 zoomSelector=None):
+
         super().__init__(parent)
 
         ### local decalarations
@@ -41,10 +47,10 @@ class   ExtendedView(QPdfView):
         print("physical dpi: ", physical_dpi)
 
         ### extended functionality
-        self.text_selector = TextSelector(self)
-        self.text_handler = TextHandler(self)
-        self.navigator = PdfNavigator(self)
-        self.zoom_selector = ZoomSelector(self)
+        self.text_selector = textSelector
+        self.text_handler = textHandler
+        self.navigator = navigator
+        self.zoom_selector = zoomSelector
         self.popup = PopupWidget(self, QPoint(0,0), {"bibliography", "special_case"})
         self.setZoomMode(QPdfView.ZoomMode.FitInView)
 

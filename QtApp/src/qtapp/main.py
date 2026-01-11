@@ -1,14 +1,16 @@
 import  sys
-from    PySide6.QtWidgets             import  (QApplication,
+from    PySide6.QtWidgets               import  (QApplication,
                                                  QMainWindow,
                                                  QWidget,
                                                  QVBoxLayout)
-from    PySide6.QtCore                import  Qt
-from    PySide6.QtPdf                 import  QPdfDocument#, QPdfPageNavigator, QPdfPageRenderer
-from    PySide6.QtPdfWidgets          import  QPdfView
+from    PySide6.QtCore                  import  Qt
+from    PySide6.QtPdf                   import  QPdfDocument#, QPdfPageNavigator, QPdfPageRenderer
+from    PySide6.QtPdfWidgets            import  QPdfView
 
-from    qtapp.components.PdfViewer    import  PdfViewer
-from    qtapp.components.FileManager  import  FileManager
+from    qtapp.components.PdfViewer      import  PdfViewer
+from    qtapp.components.FileManager    import  FileManager
+from    qtapp.viewerUtils.TextHandler   import  TextHandler
+from    qtapp.components.DocConfig      import  DocConfig
 
 class CitationLinkerApp(QMainWindow):
     def __init__(self):
@@ -23,10 +25,16 @@ class CitationLinkerApp(QMainWindow):
         self.setCentralWidget(container)
         self.document = QPdfDocument(self)
 
+        self.documentConfig = DocConfig(self)
         self.fileManager = FileManager(upload=True, pdf=True, parent=self)
-        self.initialViewer = PdfViewer(self)
+        self.textHandler = TextHandler(self)
+        self.initialViewer = PdfViewer(parent=self, textHandler=self.textHandler)
 
         self.upload_path = ""
+
+        ###options
+        self.textHandler.set_viewer(self.initialViewer)
+        self.documentConfig.hide()
 
 
         ### signals
@@ -35,6 +43,7 @@ class CitationLinkerApp(QMainWindow):
 
         ### appending
         self.layout.addWidget(self.fileManager)
+        self.layout.addWidget(self.documentConfig)
         self.layout.addWidget(self.initialViewer)
 
 
@@ -42,6 +51,7 @@ class CitationLinkerApp(QMainWindow):
     ### methods
     def file_upload(self):
         self.upload_path = self.fileManager.get_file_path()
+        self.documentConfig.file_path = self.upload_path
         self.initialViewer.open_viewer(self.upload_path)
         self.fileManager.hide()
 

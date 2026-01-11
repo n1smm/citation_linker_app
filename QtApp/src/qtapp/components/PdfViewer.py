@@ -1,6 +1,8 @@
-from    PySide6.QtCore                  import  Qt, QFile
+from    PySide6.QtCore                  import  Qt, QFile, Slot
 from    PySide6.QtWidgets               import  (QWidget,
-                                             QVBoxLayout)
+                                                QPushButton,
+                                                QHBoxLayout,
+                                                QVBoxLayout)
 #qt pdf imports
 from    PySide6.QtPdf                   import  QPdfDocument#, QPdfPageNavigator, QPdfPageRenderer
 from    PySide6.QtPdfWidgets            import  QPdfView
@@ -13,29 +15,35 @@ from    qtapp.viewerUtils.ExtendedView  import ExtendedView
 
 
 class PdfViewer(QWidget):
-    def __init__(self, parent=None):
+    def __init__(self, parent=None, textHandler=None):
         super().__init__(parent)
         print("initing pdf viewer")
 
-        ### local declarations        
 
-
-        ### member declarations
+        ### member declarations/ custom components
+        self.parent = parent
         self.layout = QVBoxLayout() #main layout
+        self.horizontal_bar = QHBoxLayout()
         self.setLayout(self.layout)
-        # self.view = QPdfView(self)
-        self.view = ExtendedView(self)
+
+        self.navigator = PdfNavigator(self)
+        self.zoom_selector = ZoomSelector(self)
+        self.text_selector = TextSelector(self)
+        self.text_handler = textHandler
+        self.view = ExtendedView(self,
+                                 textHandler,
+                                 self.text_selector,
+                                 self.navigator,
+                                 self.zoom_selector
+                                 ) # most logic is here
+        
+        
         self.document = QPdfDocument(self)
-        self.navigator = self.view.navigator
-        self.zoom_selector = self.view.zoom_selector
-        self.text_selector = self.view.text_selector
-        self.text_handler = self.view.text_handler
         self.zoom_factor = 1.0
 
-        ### initializations
-        self.setWindowTitle("Viewer")
-        
+
         ### options
+        self.setWindowTitle("Viewer")
         self.view.setDocument(self.document)
         self.view.setPageMode(QPdfView.SinglePage)
         self.view.hide()
@@ -46,8 +54,8 @@ class PdfViewer(QWidget):
         self.zoom_selector.zoom_factor_changed.connect(self.change_zoom_factor)
 
         ### element appending
+
         self.layout.addWidget(self.navigator)
-        self.layout.addWidget(self.zoom_selector)
         self.layout.addWidget(self.view)
 
     ### methods
@@ -66,13 +74,16 @@ class PdfViewer(QWidget):
             #signal
             self.navigator.nav.currentPageChanged.connect(self.on_page_change)
 
+    @Slot()
     def on_page_change(self, page_idx):
         page = self.document.getAllText(page_idx)
         # print(f" page: {page_idx}, has rect: {page.boundingRectangle()}")
 
+    @Slot()
     def change_zoom_mode(self, mode):
         self.view.setZoomMode(mode)
 
+    @Slot()
     def change_zoom_factor(self, factor):
         self.zoom_factor = factor
         self.view.setZoomFactor(factor)

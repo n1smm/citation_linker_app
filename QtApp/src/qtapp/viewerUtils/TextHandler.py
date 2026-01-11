@@ -20,6 +20,7 @@ class TextHandler(QObject):
 
         ### member declarations
         self.parent = parent
+        self.pdfViewer = None
         self.document = ""
         self.page = 0
         self.selected_text = ""
@@ -34,6 +35,8 @@ class TextHandler(QObject):
 
 
     ### methods
+    def set_viewer(self, viewer):
+        self.pdfViewer = viewer
 
     def assign_document(self, doc):
         self.document = pymupdf.open(doc)

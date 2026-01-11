@@ -29,6 +29,7 @@ class DocConfig(QWidget):
         ### member declarations
         self.user_shell = None
         self.config_path = None
+        self.file_path = ""
 
         # Config values
         self.debug = False
@@ -54,6 +55,7 @@ class DocConfig(QWidget):
         if self.config_path and os.path.exists(self.config_path):
             self.load_config()
 
+    ### ui init
     def init_ui(self):
         main_layout = QVBoxLayout(self)
 
@@ -395,7 +397,7 @@ class DocConfig(QWidget):
                     elif key == "ALTERNATIVE_BIB":
                         self.alternative_bib_check.setChecked(value.lower() == "true")
 
-            QMessageBox.information(self, "Success", "Config loaded successfully!")
+            # QMessageBox.information(self, "Success", "Config loaded successfully!")
         except Exception as e:
             QMessageBox.critical(self, "Error", f"Error loading config: {e}")
 

@@ -177,7 +177,7 @@ class TextSelector(QObject):
         total_x = scroll_pos_x + margin_w - self.w_offset
         total_y = scroll_pos_y + self.current_margins - self.h_offset
 
-        viewport_pos = self.parent.viewport().pos()
+        viewport_pos = self.parent.view.viewport().pos()
         viewport_x = total_x + viewport_pos.x()
         viewport_y = total_y + viewport_pos.y()
         size = page_rect.size()
