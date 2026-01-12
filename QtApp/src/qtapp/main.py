@@ -9,7 +9,7 @@ from    PySide6.QtPdfWidgets            import  QPdfView
 
 from    qtapp.components.PdfViewer      import  PdfViewer
 from    qtapp.components.FileManager    import  FileManager
-from    qtapp.viewerUtils.TextHandler   import  TextHandler
+from    qtapp.utils.TextHandler         import  TextHandler
 from    qtapp.components.DocConfig      import  DocConfig
 
 class CitationLinkerApp(QMainWindow):

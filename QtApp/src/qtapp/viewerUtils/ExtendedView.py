@@ -4,11 +4,11 @@ from    PySide6.QtCore                  import  Qt, QMargins, QRect, QRectF, QTi
 from    PySide6.QtGui                   import  QKeyEvent, QMouseEvent, QGuiApplication, QPainter, QPen, QColor
 
 from    qtapp.viewerUtils.TextSelector  import  TextSelector
-from    qtapp.viewerUtils.TextHandler   import  TextHandler
+from    qtapp.utils.TextHandler         import  TextHandler
 from    qtapp.viewerUtils.Navigator     import  PdfNavigator
 from    qtapp.viewerUtils.ZoomSelector  import  ZoomSelector
 from    qtapp.components.PopupWidget    import  PopupWidget
-from    qtapp.qtToPymuUtils             import  dpi_to_px
+from    qtapp.utils.qtToPymuUtils       import  dpi_to_px
 
 from    functools                       import  partial
 

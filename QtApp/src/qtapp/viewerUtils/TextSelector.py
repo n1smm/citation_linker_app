@@ -5,7 +5,7 @@ from    PySide6.QtGui                   import  QKeyEvent, QMouseEvent
 from    PySide6.QtWidgets               import  QRubberBand
 
 from    pymupdf                         import Rect
-from    qtapp.qtToPymuUtils             import px_to_dpi
+from    qtapp.utils.qtToPymuUtils       import px_to_dpi
 
 
 class TextSelector(QObject):
