@@ -11,6 +11,7 @@ from    PySide6.QtPdf                   import  QPdfDocument#, QPdfPageNavigator
 from    qtapp.components.PdfViewer      import  PdfViewer
 from    qtapp.utils.TextHandler         import  TextHandler
 from    qtapp.components.DocConfig      import  DocConfig
+from    qtapp.utils.Bridge              import  Bridge
 
 class CitationLinkerApp(QMainWindow):
     def __init__(self, file_path=None):
@@ -24,15 +25,19 @@ class CitationLinkerApp(QMainWindow):
         else:
             self.upload_path = ""
 
-        ### member declarations
+        ### layout
         self.layout = QVBoxLayout(container) #main layout
         self.horizontal_bar = QHBoxLayout()
         self.setCentralWidget(container)
-        self.document_config = DocConfig(self)
+
+        ### components
+        self.bridge = Bridge(self)
+        self.document_config = DocConfig(self, self.bridge)
         self.document = QPdfDocument(self)
         self.text_handler = TextHandler(self)
         self.initial_viewer = PdfViewer(parent=self, textHandler=self.text_handler)
 
+        ### widgets
         self.configToggle = QPushButton("config")
         self.startProcess = QPushButton("start linking")
         self.configToggle.setMaximumWidth(200)

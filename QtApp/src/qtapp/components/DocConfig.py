@@ -25,13 +25,14 @@ from    qtapp.components.FileManager    import  FileManager
 class DocConfig(QWidget):
     list_widget_changed = Signal(str, QListWidget)
 
-    def __init__(self, parent=None):
+    def __init__(self, parent=None, bridge=None):
         super().__init__(parent)
 
         ### member declarations
         self.parent = parent
-        self.user_shell = None
-        self.config_path = None
+        self.bridge = bridge
+        self.user_shell = bridge.get_user_shell() 
+        self.config_path = bridge.get_config_path()
         self.file_path = ""
 
         # Config values
@@ -53,13 +54,12 @@ class DocConfig(QWidget):
         # Initialize UI
         self.init_ui()
 
-        # Get config path and load config
-        self.get_config_path()
         if self.config_path and os.path.exists(self.config_path):
             self.load_config()
 
         #signals
         self.list_widget_changed.connect(self.list_widget_update)
+        self.parent.bridge.config_path_changed(self.on_config_path_change)
 
     ### ui init
     def init_ui(self):
@@ -333,44 +333,34 @@ class DocConfig(QWidget):
         """Show help dialog"""
         QMessageBox.information(self, title, message)
 
-    ### methods
-    def get_user_shell(self):
-        user_shell = os.environ.get("SHELL")
-        if not user_shell and sys.platform == "win32":
-            user_shell = os.environ.get("COMSPEC", "cmd.exe")
-        self.user_shell = user_shell
-        return user_shell
 
-    def get_config_path(self):
-        user_shell = self.get_user_shell()
-        cmd  = "citation-config --list"
-        kwargs = {
-                "shell": True,
-                "capture_output": True,
-                "text": True
-                }
-        if user_shell and sys.platform != "win32":
-            kwargs["executable"] = user_shell
-
-        try:
-            result = subprocess.run(cmd, **kwargs)
-            output = result.stdout
-            tokens = re.split(r":|\n", output)
-            for idx, t in enumerate(tokens):
-                if "config location" in t and tokens[idx+1]:
-                    self.config_path = tokens[idx+1].strip()
-                    print(f"Config path: {self.config_path}")
-                    break
-        except Exception as e:
-            print(f"Error getting config path: {e}")
-
+    # TODO change path also for citation-linker
     def set_config_path(self):
         self.file_manager.show()
         self.file_manager.open_file()
         self.config_path = self.file_manager.get_file_path()
         self.file_manager.reset_manager(upload=True, pdf=False)
         self.file_manager.hide()
+        self.parent.bridge.set_paths(config_path=self.config_path)
 
+    def set_input_dir(self):
+        self.file_manager.show()
+        self.file_manager.open_dir()
+        self.input_dir = self.file_manager.get_dir_path()
+        self.file_manager.reset_manager(upload=True, pdf=False)
+        self.file_manager.hide()
+        self.parent.bridge.set_paths(input_dir=self.input_dir)
+
+    def set_output_dir(self):
+        self.file_manager.show()
+        self.file_manager.open_dir()
+        self.output_dir = self.file_manager.get_dir_path()
+        self.file_manager.reset_manager(upload=True, pdf=False)
+        self.file_manager.hide()
+        self.parent.bridge.set_paths(output_dir=self.output_dir)
+
+    def on_config_path_change(self, path):
+        self.config_path = path
 
 
     def parse_config_line(self, line):
