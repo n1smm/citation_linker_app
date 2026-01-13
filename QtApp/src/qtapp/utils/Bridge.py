@@ -9,6 +9,7 @@ from    PySide6.QtCore  import  QObject, Signal
 
 class Bridge(QObject):
     config_path_changed = Signal(str)
+    linking_finished = Signal(str)
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -107,7 +108,9 @@ class Bridge(QObject):
         kwargs = self.set_kwargs(shell=True)
         self.run_process(cmd, kwargs)
 
+    # TODO handle errors in citation-linker
     def start_linking_process(self, cmd_in=None):
+        self.parent.document_config.save_config()
         self.get_input_file_path()
         base, ext = os.path.splitext(os.path.basename(self.input_file_path))
         self.delete_files_in_dir(self.input_dir)
@@ -124,6 +127,7 @@ class Bridge(QObject):
         self.run_process(cmd, kwargs)
         self.output_file_path = output_file_path
         print("output file path: ", output_file_path)
+        self.linking_finished.emit(output_file_path)
         return (output_file_path)
 
 

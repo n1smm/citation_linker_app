@@ -34,6 +34,7 @@ class DocConfig(QWidget):
         self.user_shell = bridge.get_user_shell() 
         self.config_path = bridge.get_config_path()
         self.file_path = ""
+        self.output_file_path = ""
 
         # Config values
         self.debug = False

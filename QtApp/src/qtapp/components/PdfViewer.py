@@ -50,14 +50,19 @@ class PdfViewer(QWidget):
         self.view.hide()
         self.view.set_selection_enabled(False)
         self.text_selector.rubberBand =  QRubberBand(QRubberBand.Rectangle, self.view)
+        self.zoom_selector.setMaximumWidth(400)
 
         ### signals
         self.zoom_selector.zoom_mode_changed.connect(self.change_zoom_mode)
         self.zoom_selector.zoom_factor_changed.connect(self.change_zoom_factor)
 
         ### element appending
+        self.horizontal_bar.addWidget(self.navigator)
+        self.horizontal_bar.addWidget(self.zoom_selector)
 
-        self.layout.addWidget(self.navigator)
+
+        self.layout.addLayout(self.horizontal_bar)
+        # self.layout.addWidget(self.navigator)
         self.layout.addWidget(self.view)
 
     ### methods
