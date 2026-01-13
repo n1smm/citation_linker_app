@@ -92,10 +92,9 @@ class CitationLinkerApp(QMainWindow):
                                  "if the configuration is okay."),
                                 QMessageBox.Yes | QMessageBox.No)
         if reply == QMessageBox.Yes:
-            print(reply)
+            self.bridge.start_linking_process()
         else:
-            print(reply)
-            #
+            pass
 
         
 

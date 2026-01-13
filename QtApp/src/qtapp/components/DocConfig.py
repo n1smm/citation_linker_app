@@ -59,7 +59,7 @@ class DocConfig(QWidget):
 
         #signals
         self.list_widget_changed.connect(self.list_widget_update)
-        self.parent.bridge.config_path_changed(self.on_config_path_change)
+        self.bridge.config_path_changed.connect(self.on_config_path_change)
 
     ### ui init
     def init_ui(self):
@@ -334,7 +334,6 @@ class DocConfig(QWidget):
         QMessageBox.information(self, title, message)
 
 
-    # TODO change path also for citation-linker
     def set_config_path(self):
         self.file_manager.show()
         self.file_manager.open_file()
@@ -507,15 +506,14 @@ class DocConfig(QWidget):
         QMessageBox.information(self, "Cleared", "All fields cleared. Configure and save as needed.")
 
     def article_deconstruct_data(self, data):
+        """ bridge between 0 index to 1 index struct for aritcles """
         full_list = []
         for pair in data:
-            first = pair["first"]
-            last = pair["last"]
+            first = pair["first"] + 1
+            last = pair["last"] + 1
             together= f"{first}:{last}"
             full_list.append(together)
         return full_list
-
-
 
     def set_data_from_view(self, config_data=None):
         if config_data:
@@ -541,6 +539,7 @@ class DocConfig(QWidget):
         self.update()
 
     def list_widget_update(self, field_name, widget):
+        """ setting data from config back to document viewed """
         if field_name == "SPECIAL_CASE":
             self.special_cases.clear()
             for i in range(self.special_case_list.count()):
@@ -555,22 +554,16 @@ class DocConfig(QWidget):
 
         elif field_name == "ARTICLE_BREAKS":
             self.article_cache.clear()
-            for i in range(self.delimiter_list.count()):
-                tokens = self.article_breakes_list.item(i).text().split(":")
+            for i in range(self.article_breaks_list.count()):
+                tokens = self.article_breaks_list.item(i).text().split(":")
+                # transform from 1 index to 0 index  count
                 pair = {
-                        "first": tokens[0],
-                        "last": tokens[1]
+                        "first": int(tokens[0]) -1,
+                        "last": int(tokens[1]) -1
                         }
-                self.article.cache.append(pair)
+                self.article_cache.append(pair)
             self.parent.text_handler.article_cache = self.article_cache
                     
-
-
-
-
-
-
-
 
 
 if __name__ == "__main__":

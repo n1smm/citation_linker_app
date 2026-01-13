@@ -3,6 +3,7 @@ import  os
 import  sys
 import  subprocess
 import  pymupdf
+import  shutil
 from    pathlib         import  Path
 from    PySide6.QtCore  import  QObject, Signal
 
@@ -34,6 +35,7 @@ class Bridge(QObject):
         return user_shell
 
     def get_config_path(self):
+        self.get_input_file_path()
         user_shell = self.get_user_shell()
         cmd  = "citation-config --list"
         kwargs = self.set_kwargs()
@@ -65,6 +67,9 @@ class Bridge(QObject):
         except Exception as e:
             print(f"Error getting config path: {e}")
 
+    def get_input_file_path(self):
+        self.input_file_path = self.parent.upload_path
+
     def set_kwargs(self, shell=True):
         kwargs = {
                 "shell": shell,
@@ -74,6 +79,16 @@ class Bridge(QObject):
         if self.user_shell and sys.platform != "win32":
             kwargs["executable"] = self.user_shell
         return kwargs
+
+    def run_process(self, cmd, kwargs):
+        try:
+            print("cmd:", cmd)
+            result = subprocess.run(cmd, **kwargs)
+            output = result.stdout
+            print ("output: ", output)
+            print("stderr:", result.stderr)
+        except Exception as e:
+            print(f"Error modifying paths: {e}")
 
 
     # TODO change path also for citation-linker
@@ -90,15 +105,38 @@ class Bridge(QObject):
 
         # cmd = ["citation-config", "--input", input_dir, "--output", output_dir]
         kwargs = self.set_kwargs(shell=True)
+        self.run_process(cmd, kwargs)
 
-        try:
-            print("cmd:", cmd)
-            result = subprocess.run(cmd, **kwargs)
-            output = result.stdout
-            print ("output: ", output)
-            print("stderr:", result.stderr)
-        except Exception as e:
-            print(f"Error modifying paths: {e}")
+    def start_linking_process(self, cmd_in=None):
+        self.get_input_file_path()
+        base, ext = os.path.splitext(os.path.basename(self.input_file_path))
+        self.delete_files_in_dir(self.input_dir)
+        shutil.copy(self.input_file_path, os.path.join(self.input_dir, base+ext))
+        output_file_base = base + "_linked" + ext
+        output_file_path = os.path.join(self.output_dir, output_file_base)
+
+        if cmd_in == "citation-linker" or cmd_in == "citation-multi-file":
+            cmd = cmd_in
+        else:
+            cmd = "citation-multi-article"
+
+        kwargs = self.set_kwargs(shell=True)
+        self.run_process(cmd, kwargs)
+        self.output_file_path = output_file_path
+        print("output file path: ", output_file_path)
+        return (output_file_path)
+
+
+
+
+    def delete_files_in_dir(self, dir):
+        for filename in os.listdir(self.input_dir):
+            file_path = os.path.join(self.input_dir, filename)
+            if os.path.isfile(file_path):
+                os.remove(file_path)
+
+        
+
 
 
 if __name__ == "__main__":

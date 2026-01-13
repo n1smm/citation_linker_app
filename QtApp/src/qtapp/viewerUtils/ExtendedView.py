@@ -95,40 +95,6 @@ class   ExtendedView(QPdfView):
 
     ### --- interaction events ----
 
-    def handle_annots(self, event, annot_idx, type="annot"):
-        popup_pos = self.viewport().mapToGlobal(event.pos())
-        self.popup.show_at(popup_pos, alt=True)
-        self.curr_annot_idx = annot_idx
-        if type == "annot":
-            self.curr_annot_type = "annot"
-        else:
-            self.curr_annot_type = "link"
-
-            
-    def on_annot_event(self, action):
-        if  self.curr_annot_type == "annot":
-            print("action:", action)
-            new_rect = None
-            self.text_handler.annot_action(
-                    self.curr_annot_idx,
-                    action,
-                    new_rect
-                    )
-
-            update_rect = (self.text_selector.page_to_viewport_coords
-                (self.current_annotations[self.curr_annot_idx]["rect"]))
-            
-        elif self.curr_annot_type == "link":
-            new_dest = None
-            self.text_handler.link_action(self.curr_annot_idx, action, new_dest)
-            update_rect = (self.text_selector.page_to_viewport_coords
-                (self.current_links[self.curr_annot_idx]["from"]))
-            update_rect.setHeight(update_rect.height() + 2)
-            update_rect.setWidth(update_rect.width() + 2)
-            update_rect.setX(update_rect.x() - 1)
-            update_rect.setY(update_rect.y() -1)
-        self.viewport().update(update_rect)
-        self.popup.hide()
 
     def mousePressEvent(self, event):
         if self.selection_enabled and event.button() == Qt.LeftButton:
@@ -231,6 +197,41 @@ class   ExtendedView(QPdfView):
             super().keyPressEvent(event)
 
     ### methods
+    def handle_annots(self, event, annot_idx, type="annot"):
+        popup_pos = self.viewport().mapToGlobal(event.pos())
+        self.popup.show_at(popup_pos, alt=True)
+        self.curr_annot_idx = annot_idx
+        if type == "annot":
+            self.curr_annot_type = "annot"
+        else:
+            self.curr_annot_type = "link"
+
+            
+    def on_annot_event(self, action):
+        if  self.curr_annot_type == "annot":
+            print("action:", action)
+            new_rect = None
+            self.text_handler.annot_action(
+                    self.curr_annot_idx,
+                    action,
+                    new_rect
+                    )
+
+            update_rect = (self.text_selector.page_to_viewport_coords
+                (self.current_annotations[self.curr_annot_idx]["rect"]))
+            
+        elif self.curr_annot_type == "link":
+            new_dest = None
+            self.text_handler.link_action(self.curr_annot_idx, action, new_dest)
+            update_rect = (self.text_selector.page_to_viewport_coords
+                (self.current_links[self.curr_annot_idx]["from"]))
+            update_rect.setHeight(update_rect.height() + 2)
+            update_rect.setWidth(update_rect.width() + 2)
+            update_rect.setX(update_rect.x() - 1)
+            update_rect.setY(update_rect.y() -1)
+        self.viewport().update(update_rect)
+        self.popup.hide()
+
     def select_page(self):
       curr_page = self.navigator.get_curr_page()
 
