@@ -5,7 +5,7 @@ import  subprocess
 import  pymupdf
 import  shutil
 from    pathlib         import  Path
-from    PySide6.QtCore  import  QObject, Signal
+from    PySide6.QtCore  import  QObject, Signal, Slot
 
 class Bridge(QObject):
     config_path_changed = Signal(str)
@@ -131,15 +131,19 @@ class Bridge(QObject):
         return (output_file_path)
 
 
-
-
     def delete_files_in_dir(self, dir):
         for filename in os.listdir(self.input_dir):
             file_path = os.path.join(self.input_dir, filename)
             if os.path.isfile(file_path):
                 os.remove(file_path)
 
-        
+    def save_final_doc(self, pymu_doc):
+        if pymu_doc:
+            temp_path = self.output_file_path + ".tmp"
+            pymu_doc.save(temp_path)
+            os.replace(temp_path, self.output_file_path)
+            print("file saved")
+        pass
 
 
 

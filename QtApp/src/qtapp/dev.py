@@ -51,10 +51,12 @@ class CitationLinkerApp(QMainWindow):
                                    for env in self.view_environments if 
                                    env["type"] == "input_doc")
 
-        ### widgets
+        ### buttons
         self.configToggle = QPushButton("config")
         self.startProcess = QPushButton("start linking")
         self.switchViewers = QPushButton("output document")
+        self.saveFile = QPushButton("save file")
+        self.exitBtn = QPushButton("🗙")
 
 
         ### options
@@ -64,27 +66,36 @@ class CitationLinkerApp(QMainWindow):
         self.switchViewers.setMaximumWidth(200)
         self.configToggle.setMaximumWidth(200)
         self.startProcess.setMaximumWidth(200)
+        self.exitBtn.setMaximumWidth(20)
+        self.saveFile.setMaximumWidth(200)
+        self.configToggle.setCheckable(True)
+        self.switchViewers.setCheckable(True)
 
         ### signals
         self.configToggle.toggled.connect(self.toggle_config)
+        self.switchViewers.toggled.connect(self.switch_views)
         self.startProcess.clicked.connect(self.start_linking_process)
+        self.saveFile.clicked.connect(self.save_file_event)
         self.bridge.linking_finished.connect(self.open_output_view)
 
         ### appending
         self.init_viewers_ui()
-        self.horizontal_bar.setContentsMargins(200, 2, 200, 2)
+        self.horizontal_bar.setContentsMargins(50, 2, 50, 2)
         self.horizontal_bar.setSpacing(20)
+        self.horizontal_bar.addStretch()
         self.horizontal_bar.addWidget(self.configToggle)
         # self.horizontal_bar.addWidget(self.initial_viewer.zoom_selector)
         self.horizontal_bar.addWidget(self.startProcess)
         self.horizontal_bar.addWidget(self.switchViewers)
+        self.horizontal_bar.addWidget(self.saveFile)
+        self.horizontal_bar.addStretch()
+        self.horizontal_bar.addWidget(self.exitBtn)
 
         self.layout.addLayout(self.horizontal_bar)
         self.layout.addLayout(self.input_layout)
         self.layout.addLayout(self.output_layout)
         # self.layout.addWidget(self.initial_viewer)
         self.layout.addWidget(self.document_config)
-        self.configToggle.setCheckable(True)
 
 
     ### methods
@@ -115,12 +126,47 @@ class CitationLinkerApp(QMainWindow):
                 env["viewer"].show()
                 self.document_config.output_file_path = output_file_path
             self.is_input_view = False
+            self.switchViewers.setChecked(True)
+            self.switchViewers.setText("input document")
         
 
     def file_upload(self, viewer=None):
         self.initial_viewer.open_viewer(self.upload_path)
         self.document_config.file_path = self.upload_path
 
+    def start_linking_process(self):
+        update_data = self.text_handler.get_config_data()
+        print(update_data)
+        self.document_config.set_data_from_view(update_data)
+        reply = QMessageBox.information(self, "Are you sure?",
+                                ("Are you sure?,\n"
+                                 "otherwise check again\n"
+                                 "if the configuration is okay."),
+                                QMessageBox.Yes | QMessageBox.No)
+        if reply == QMessageBox.Yes:
+            self.bridge.start_linking_process()
+        else:
+            pass
+
+    @Slot()
+    def switch_views(self, checked):
+        if not checked:
+            self.switchViewers.setText("upload document")
+            for env in self.view_environments:
+                if env["type"] == "input_doc":
+                    env["viewer"].show()
+                else:
+                    env["viewer"].hide()
+            self.is_input_view = True
+        else:
+            self.switchViewers.setText("output document")
+            for env in self.view_environments:
+                if env["type"] == "input_doc":
+                    env["viewer"].hide()
+                else:
+                    env["viewer"].show()
+            self.is_input_view = False
+            
 
     @Slot()
     def toggle_config(self, checked):
@@ -148,19 +194,15 @@ class CitationLinkerApp(QMainWindow):
                 if env["type"] != "input_doc":
                     env["viewer"].show()
 
-    def start_linking_process(self):
-        update_data = self.text_handler.get_config_data()
-        print(update_data)
-        self.document_config.set_data_from_view(update_data)
-        reply = QMessageBox.information(self, "Are you sure?",
-                                ("Are you sure?,\n"
-                                 "otherwise check again\n"
-                                 "if the configuration is okay."),
-                                QMessageBox.Yes | QMessageBox.No)
-        if reply == QMessageBox.Yes:
-            self.bridge.start_linking_process()
-        else:
-            pass
+    @Slot()
+    def save_file_event(self):
+        pymu_doc = None
+        for env in self.view_environments:
+            if env["type"] == "output_doc":
+                pymu_doc = env["text_handler"].document
+        self.bridge.save_final_doc(pymu_doc)
+
+
 
         
 
