@@ -119,7 +119,7 @@ class TextSelector(QObject):
         view_width = float(self.current_viewport.width())
         view_height = float(self.current_viewport.height())
 
-        if doc_width > view_width:
+        if doc_width >= view_width:
             margin_w = self.current_margins
         else: 
             margin_w = (view_width - doc_width) / 2.0 - 1.0

@@ -61,7 +61,6 @@ class   ExtendedView(QPdfView):
         self.setDocumentMargins(QMargins(10,10,10,10))
         self.popup.assign_alt_buttons({"delete", "change"})
         self.popup.switch_buttons_to(alt=False)
-        # self.setDocumentMargins(QMargins(5,5,5,5))
         self.navigator.hide()
         self.zoom_selector.hide()
 
@@ -411,6 +410,9 @@ class   ExtendedView(QPdfView):
             total_width = float(viewport.width()) - float(marg.left()) - float(marg.right())
             scale_x = float(viewport.width()) / page_size.width()
             scale_y = float(viewport.height()) / page_size.height()
+            if scale_y > scale_x:
+                scale_x = float(total_width) / page_size.width()
+                scale_y = float(total_height) / page_size.height()
             if alternative:
                 return scale_y
             return min(scale_x, scale_y)
