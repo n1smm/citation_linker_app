@@ -1,11 +1,11 @@
-from    PySide6.QtCore                  import  Qt, QFile, Slot
+from    PySide6.QtCore                  import  Qt, QFile, Slot, Signal
 from    PySide6.QtWidgets               import  (QWidget,
                                                 QPushButton,
                                                 QHBoxLayout,
                                                 QRubberBand,
                                                 QVBoxLayout)
 #qt pdf imports
-from    PySide6.QtPdf                   import  QPdfDocument#, QPdfPageNavigator, QPdfPageRenderer
+from    PySide6.QtPdf                   import  QPdfDocument
 from    PySide6.QtPdfWidgets            import  QPdfView
 
 #local
@@ -16,7 +16,9 @@ from    qtapp.viewerUtils.ExtendedView  import ExtendedView
 
 
 class PdfViewer(QWidget):
-    def __init__(self, parent=None, textHandler=None):
+    article_changed = Signal(dict, bool)
+
+    def __init__(self, parent=None, textHandler=None, isAlt=False):
         super().__init__(parent)
         print("initing pdf viewer")
 
@@ -40,7 +42,11 @@ class PdfViewer(QWidget):
         
         
         self.document = QPdfDocument(self)
+        self.config_article_cache = self.parent.document_config.article_cache
+        self.current_article = None
+        print("config_cache: ", self.config_article_cache)
         self.zoom_factor = 1.0
+        self.is_alt = isAlt
 
 
         ### options
@@ -78,13 +84,33 @@ class PdfViewer(QWidget):
             self.zoom_selector.reset()
             self.view.set_selection_enabled(True)
             self.view.show()
+            self.config_article_cache = self.parent.document_config.article_cache
+            print("config_cache: ", self.config_article_cache)
             #signal
             self.navigator.nav.currentPageChanged.connect(self.on_page_change)
 
     @Slot()
     def on_page_change(self, page_idx):
-        page = self.document.getAllText(page_idx)
+        self.config_article_cache = self.parent.document_config.article_cache
+        for article in self.config_article_cache:
+            if article["first"] <= page_idx <= article["last"]:
+                if self.current_article != article:
+                    self.current_article = article
+                    self.article_changed.emit(article, self.is_alt)
+        else:
+            self.current_article = None
+
+        # page = self.document.getAllText(page_idx)
         # print(f" page: {page_idx}, has rect: {page.boundingRectangle()}")
+
+    @Slot()
+    def on_article_changed(self, article, is_alt):
+        if is_alt or not self.is_alt:
+            return
+
+        last_page = article["last"]        
+        self.navigator.jump_to(last_page)
+
 
     @Slot()
     def change_zoom_mode(self, mode):

@@ -150,7 +150,7 @@ class PdfNavigator(QWidget):
         if self.nav:
             location = point if point else self.nav.currentLocation()
             # self.nav.jump(page, point)
-            self.nav.jump(page_number, point)
+            self.nav.jump(page_number, location)
             self.update_page_display(page_number)
         
     #updates the page_display according to nav

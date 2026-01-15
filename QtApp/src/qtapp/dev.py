@@ -32,15 +32,18 @@ class CitationLinkerApp(QMainWindow):
         self.output_layout = QHBoxLayout()
         self.setCentralWidget(container)
 
+        ### cross document objects
         self.view_environments = []
         self.is_input_view = True
-        self.create_document_env()
-        self.create_document_env("output_doc")
-        self.create_document_env("output_alt")
-
-        ### components (input doc view env)
         self.bridge = Bridge(self)
         self.document_config = DocConfig(self, self.bridge)
+
+        ###document/viewer environments
+        self.create_document_env()
+        self.create_document_env("output_doc")
+        self.create_document_env("output_alt", alt=True)
+
+        ### components (input doc view env)
         self.document = next(env["document"]
                              for env in self.view_environments if 
                              env["type"] == "input_doc")
@@ -76,6 +79,7 @@ class CitationLinkerApp(QMainWindow):
         self.switchViewers.toggled.connect(self.switch_views)
         self.startProcess.clicked.connect(self.start_linking_process)
         self.saveFile.clicked.connect(self.save_file_event)
+        self.exitBtn.clicked.connect(QApplication.quit)
         self.bridge.linking_finished.connect(self.open_output_view)
 
         ### appending
@@ -84,7 +88,6 @@ class CitationLinkerApp(QMainWindow):
         self.horizontal_bar.setSpacing(20)
         self.horizontal_bar.addStretch()
         self.horizontal_bar.addWidget(self.configToggle)
-        # self.horizontal_bar.addWidget(self.initial_viewer.zoom_selector)
         self.horizontal_bar.addWidget(self.startProcess)
         self.horizontal_bar.addWidget(self.switchViewers)
         self.horizontal_bar.addWidget(self.saveFile)
@@ -94,7 +97,6 @@ class CitationLinkerApp(QMainWindow):
         self.layout.addLayout(self.horizontal_bar)
         self.layout.addLayout(self.input_layout)
         self.layout.addLayout(self.output_layout)
-        # self.layout.addWidget(self.initial_viewer)
         self.layout.addWidget(self.document_config)
 
 
@@ -103,19 +105,28 @@ class CitationLinkerApp(QMainWindow):
         for env in self.view_environments:
             if env["type"] == "input_doc":
                 self.input_layout.addWidget(env["viewer"])
+                self.document_config.list_widget_changed.emit("ALL", None)
             else:
                 self.output_layout.addWidget(env["viewer"])
 
         
-    def create_document_env(self, view_type="input_doc"):
-        document = QPdfDocument(self)
-        text_handler = TextHandler(self)
-        viewer = PdfViewer(parent=self, textHandler=text_handler)
+    def create_document_env(self, view_type="input_doc", alt=False):
+        if alt:
+            document = self.view_environments[-1]["document"]
+            text_handler = self.view_environments[-1]["text_handler"]
+            viewer = PdfViewer(parent=self, textHandler=text_handler, isAlt=True)
+        else:
+            document = QPdfDocument(self)
+            text_handler = TextHandler(self)
+            viewer = PdfViewer(parent=self, textHandler=text_handler)
+
+
 
         self.view_environments.append({"type": view_type,
                                         "document": document,
                                         "text_handler": text_handler,
                                         "viewer": viewer})
+
 
     def open_output_view(self, output_file_path):
         for env in self.view_environments:
@@ -125,9 +136,29 @@ class CitationLinkerApp(QMainWindow):
                 env["viewer"].open_viewer(output_file_path)
                 env["viewer"].show()
                 self.document_config.output_file_path = output_file_path
+                self.set_alt_viewer(env)
             self.is_input_view = False
             self.switchViewers.setChecked(True)
             self.switchViewers.setText("input document")
+
+    def set_alt_viewer(self, env):
+        viewer = env["viewer"]
+        if viewer.is_alt == False:
+            return
+
+        article_list = self.document_config.article_breaks_list
+        start_page = 0
+        for i in range(article_list.count()):
+            if i == 0:
+                tokens = article_list.item(i).text().split(":")
+                start_page = int(tokens[-1]) - 1
+                break
+        viewer.navigator.jump_to(start_page)
+        for env in self.view_environments:
+            if env["viewer"] != viewer:
+                env["viewer"].article_changed.connect(viewer.on_article_changed)
+        
+        print("start_page: ", start_page)
         
 
     def file_upload(self, viewer=None):
@@ -201,6 +232,16 @@ class CitationLinkerApp(QMainWindow):
             if env["type"] == "output_doc":
                 pymu_doc = env["text_handler"].document
         self.bridge.save_final_doc(pymu_doc)
+
+
+    def closeEvent(self, event):
+        for env in self.view_environments:
+            env["text_handler"].close_document()
+            doc = env["document"]
+            if isinstance(doc, QPdfDocument):
+                doc.close()
+        event.accept()
+
 
 
 

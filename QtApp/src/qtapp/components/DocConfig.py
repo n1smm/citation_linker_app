@@ -55,12 +55,12 @@ class DocConfig(QWidget):
         # Initialize UI
         self.init_ui()
 
-        if self.config_path and os.path.exists(self.config_path):
-            self.load_config()
-
         #signals
         self.list_widget_changed.connect(self.list_widget_update)
         self.bridge.config_path_changed.connect(self.on_config_path_change)
+
+        if self.config_path and os.path.exists(self.config_path):
+            self.load_config()
 
     ### ui init
     def init_ui(self):
@@ -506,7 +506,7 @@ class DocConfig(QWidget):
 
         QMessageBox.information(self, "Cleared", "All fields cleared. Configure and save as needed.")
 
-    def article_deconstruct_data(self, data):
+    def article_cache_to_list(self, data):
         """ bridge between 0 index to 1 index struct for aritcles """
         full_list = []
         for pair in data:
@@ -515,12 +515,24 @@ class DocConfig(QWidget):
             together= f"{first}:{last}"
             full_list.append(together)
         return full_list
+    
+    def article_list_to_cache(self, data):
+        cache = []
+        for i in range(data.count()):
+            tokens = data.item(i).text().split(":")
+            # transform from 1 index to 0 index  count
+            pair = {
+                    "first": int(tokens[0]) -1,
+                    "last": int(tokens[1]) -1
+                    }
+            cache.append(pair)
+        return cache
 
     def set_data_from_view(self, config_data=None):
         if config_data:
             if config_data["article_cache"]:
                 self.article_cache = config_data["article_cache"]
-                article_list = self.article_deconstruct_data(self.article_cache)
+                article_list = self.article_cache_to_list(self.article_cache)
                 self.article_breaks_list.clear()
                 self.article_breaks_list.addItems(article_list)
 
@@ -539,30 +551,23 @@ class DocConfig(QWidget):
                      
         self.update()
 
-    def list_widget_update(self, field_name, widget):
+    def list_widget_update(self, field_name, widget=None):
         """ setting data from config back to document viewed """
-        if field_name == "SPECIAL_CASE":
+        if field_name == "SPECIAL_CASE" or field_name == "ALL":
             self.special_cases.clear()
             for i in range(self.special_case_list.count()):
                 self.special_cases.append(self.special_case_list.item(i).text())
             self.parent.text_handler.special_cases = self.special_cases
 
-        elif field_name == "BIBLIOGRAPHY_DELIMITER":
+        if field_name == "BIBLIOGRAPHY_DELIMITER" or field_name == "ALL":
             self.delimiters.clear()
             for i in range(self.delimiter_list.count()):
                 self.delimiters.append(self.delimiter_list.item(i).text())
             self.parent.text_handler.delimiters = self.delimiters
 
-        elif field_name == "ARTICLE_BREAKS":
+        if field_name == "ARTICLE_BREAKS" or field_name == "ALL":
             self.article_cache.clear()
-            for i in range(self.article_breaks_list.count()):
-                tokens = self.article_breaks_list.item(i).text().split(":")
-                # transform from 1 index to 0 index  count
-                pair = {
-                        "first": int(tokens[0]) -1,
-                        "last": int(tokens[1]) -1
-                        }
-                self.article_cache.append(pair)
+            self.article_cache = self.article_list_to_cache(self.article_breaks_list)
             self.parent.text_handler.article_cache = self.article_cache
                     
 

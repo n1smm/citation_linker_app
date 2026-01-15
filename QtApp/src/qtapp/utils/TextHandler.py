@@ -42,7 +42,10 @@ class TextHandler(QObject):
         self.document = pymupdf.open(doc)
 
     def close_document(self):
-        self.document.close()
+        if self.document:
+            self.document.close()
+        else:
+            print("no document open")
 
 
     def find_text(self, page_idx, rectF):
