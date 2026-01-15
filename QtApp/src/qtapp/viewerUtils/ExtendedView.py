@@ -8,7 +8,7 @@ from    qtapp.utils.TextHandler         import  TextHandler
 from    qtapp.viewerUtils.Navigator     import  PdfNavigator
 from    qtapp.viewerUtils.ZoomSelector  import  ZoomSelector
 from    qtapp.components.PopupWidget    import  PopupWidget
-from    qtapp.utils.qtToPymuUtils       import  dpi_to_px
+from    qtapp.utils.qtToPymuUtils       import  dpi_to_px, px_to_dpi
 
 from    functools                       import  partial
 
@@ -22,7 +22,8 @@ class   ExtendedView(QPdfView):
                  textHandler=None,
                  textSelector=None,
                  navigator=None,
-                 zoomSelector=None):
+                 zoomSelector=None,
+                 isOutput=False):
 
         super().__init__(parent)
 
@@ -43,6 +44,7 @@ class   ExtendedView(QPdfView):
         self.curr_page_rect = None
         self.curr_annot_idx = 0
         self.curr_annot_type = None
+        self.is_output = isOutput
         print("dpi: ", dpi, "transform_factor: ", self.zoom_transform_factor)
         print("physical dpi: ", physical_dpi)
 
@@ -51,7 +53,10 @@ class   ExtendedView(QPdfView):
         self.text_handler = textHandler
         self.navigator = navigator
         self.zoom_selector = zoomSelector
-        self.popup = PopupWidget(self, QPoint(0,0), {"bibliography", "special_case"})
+        if self.is_output:
+            self.popup = PopupWidget(self, QPoint(0,0), {"add_link", "add_destination"})
+        else:
+            self.popup = PopupWidget(self, QPoint(0,0), {"bibliography", "special_case"})
         self.setZoomMode(QPdfView.ZoomMode.FitInView)
 
 
@@ -66,8 +71,13 @@ class   ExtendedView(QPdfView):
 
         ### signals
         self.text_selector.rect_changed.connect(self.color_selection)
-        self.popup.button_objs["bibliography"].clicked.connect(self.handle_bibliography)
-        self.popup.button_objs["special_case"].clicked.connect(self.handle_special_case)
+        if self.is_output:
+            self.popup.button_objs["add_link"].clicked.connect(self.handle_link)
+            self.popup.button_objs["add_destination"].clicked.connect(self.handle_destination)
+        else:
+            self.popup.button_objs["bibliography"].clicked.connect(self.handle_bibliography)
+            self.popup.button_objs["special_case"].clicked.connect(self.handle_special_case)
+
         self.popup.alt_buttons["delete"].clicked.connect(partial(self.on_annot_event, "delete"))
         self.popup.alt_buttons["change"].clicked.connect(lambda: (print("change"), self.popup.hide()))
 
@@ -277,6 +287,36 @@ class   ExtendedView(QPdfView):
     def handle_special_case(self):
         curr_text = self.text_handler.selected_text
         self.text_handler.special_cases.append(curr_text.strip())
+        self.popup.hide()
+        self.clear_selection()
+        if self.selection_rect:
+            self.viewport().update(self.selection_rect)
+
+    @Slot()
+    def handle_link(self):
+        curr_text = self.text_handler.selected_text
+        print("curr_text: ", curr_text)
+        rect_info = {
+                "rect" : self.selection_rect,
+                "current_zoom": self.effectiveZoomFactor()
+                }
+        dpi_rect = px_to_dpi(rect_info)
+        self.text_handler.link_creation(dpi_rect)
+        self.popup.hide()
+        self.clear_selection()
+        if self.selection_rect:
+            self.viewport().update(self.selection_rect)
+
+    @Slot()
+    def handle_destination(self):
+        curr_text = self.text_handler.selected_text
+        print("curr_text: ", curr_text)
+        rect_info = {
+                "rect" : self.selection_rect,
+                "current_zoom": self.effectiveZoomFactor()
+                }
+        dpi_rect = px_to_dpi(rect_info)
+        self.text_handler.link_destination(dpi_rect, self.navigator.get_curr_page())
         self.popup.hide()
         self.clear_selection()
         if self.selection_rect:

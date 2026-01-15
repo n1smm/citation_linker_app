@@ -30,6 +30,7 @@ class TextHandler(QObject):
         self.special_cases = []
         self.curr_annots = []
         self.curr_links = []
+        self.curr_link_selection = {}
 
         ### signals
 
@@ -172,6 +173,36 @@ class TextHandler(QObject):
         elif action == "change":
             link["to"] = new_dest
             self.page.update_link(link)
+
+    def link_creation (self, selection):
+        if not selection:
+            print("nothing selected")
+            return
+
+        rect = rect_qt_to_py(selection)
+        link_data = {
+            "kind": pymupdf.LINK_GOTO,
+            "from": rect,
+            "page": 0,
+            "to": None,
+            "link_page": self.page
+        }
+        self.curr_link_selection = link_data
+
+    def link_destination(self, selection, page_idx):
+        if not selection:
+            print("nothing selected")
+            return
+
+        rect = rect_qt_to_py(selection)
+        point = rect.top_left
+        page = self.curr_link_selection["link_page"]
+        del self.curr_link_selection["link_page"]
+        self.curr_link_selection["to"] = point
+        self.curr_link_selection["page"] = page_idx
+        page.insert_link(self.curr_link_selection)
+        self.curr_links.append(self.curr_link_selection)
+        self.curr_link_selection.clear()
 
     @Slot()
     def get_config_data(self):

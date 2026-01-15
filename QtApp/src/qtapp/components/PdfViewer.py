@@ -18,7 +18,7 @@ from    qtapp.viewerUtils.ExtendedView  import ExtendedView
 class PdfViewer(QWidget):
     article_changed = Signal(dict, bool)
 
-    def __init__(self, parent=None, textHandler=None, isAlt=False):
+    def __init__(self, parent=None, textHandler=None, isAlt=False, isOutput=False):
         super().__init__(parent)
         print("initing pdf viewer")
 
@@ -37,16 +37,17 @@ class PdfViewer(QWidget):
                                  textHandler,
                                  self.text_selector,
                                  self.navigator,
-                                 self.zoom_selector
+                                 self.zoom_selector,
+                                 isOutput
                                  ) # most logic is here
         
         
         self.document = QPdfDocument(self)
         self.config_article_cache = self.parent.document_config.article_cache
         self.current_article = None
-        print("config_cache: ", self.config_article_cache)
         self.zoom_factor = 1.0
         self.is_alt = isAlt
+        self.is_output = isOutput
 
 
         ### options
@@ -85,7 +86,6 @@ class PdfViewer(QWidget):
             self.view.set_selection_enabled(True)
             self.view.show()
             self.config_article_cache = self.parent.document_config.article_cache
-            print("config_cache: ", self.config_article_cache)
             #signal
             self.navigator.nav.currentPageChanged.connect(self.on_page_change)
 

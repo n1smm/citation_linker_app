@@ -40,8 +40,8 @@ class CitationLinkerApp(QMainWindow):
 
         ###document/viewer environments
         self.create_document_env()
-        self.create_document_env("output_doc")
-        self.create_document_env("output_alt", alt=True)
+        self.create_document_env("output_doc", output=True)
+        self.create_document_env("output_alt", alt=True, output=True)
 
         ### components (input doc view env)
         self.document = next(env["document"]
@@ -110,15 +110,14 @@ class CitationLinkerApp(QMainWindow):
                 self.output_layout.addWidget(env["viewer"])
 
         
-    def create_document_env(self, view_type="input_doc", alt=False):
+    def create_document_env(self, view_type="input_doc", alt=False, output=False):
         if alt:
             document = self.view_environments[-1]["document"]
             text_handler = self.view_environments[-1]["text_handler"]
-            viewer = PdfViewer(parent=self, textHandler=text_handler, isAlt=True)
         else:
             document = QPdfDocument(self)
             text_handler = TextHandler(self)
-            viewer = PdfViewer(parent=self, textHandler=text_handler)
+        viewer = PdfViewer(parent=self, textHandler=text_handler, isAlt=alt, isOutput=output)
 
 
 
@@ -137,6 +136,7 @@ class CitationLinkerApp(QMainWindow):
                 env["viewer"].show()
                 self.document_config.output_file_path = output_file_path
                 self.set_alt_viewer(env)
+            self.document_config.hide()
             self.is_input_view = False
             self.switchViewers.setChecked(True)
             self.switchViewers.setText("input document")
