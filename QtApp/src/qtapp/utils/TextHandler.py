@@ -1,3 +1,4 @@
+import  re
 import  pymupdf
 from    PySide6.QtCore                  import  QPointF, QPoint, QRect, QSize, QObject, Slot
 
@@ -174,12 +175,15 @@ class TextHandler(QObject):
             link["to"] = new_dest
             self.page.update_link(link)
 
-    def link_creation (self, selection):
+
+    def link_creation(self, selection):
         if not selection:
             print("nothing selected")
             return
 
         rect = rect_qt_to_py(selection)
+        text = self.page.get_text("text", clip=rect)
+        print("pymupdf rect text: ", text)
         link_data = {
             "kind": pymupdf.LINK_GOTO,
             "from": rect,
@@ -189,7 +193,7 @@ class TextHandler(QObject):
         }
         self.curr_link_selection = link_data
 
-    def link_destination(self, selection, page_idx):
+    def link_destination(self, selection, page_idx, zoom_factor=None):
         if not selection:
             print("nothing selected")
             return
@@ -198,11 +202,54 @@ class TextHandler(QObject):
         point = rect.top_left
         page = self.curr_link_selection["link_page"]
         del self.curr_link_selection["link_page"]
+        
+        # Convert the original "from" rect to pixels for display
+        from_rect = rect_py_to_qt(self.curr_link_selection["from"])
+        qt_rect = dpi_to_px({
+                            "rect": from_rect,
+                            "current_zoom": zoom_factor
+                            })
+
         self.curr_link_selection["to"] = point
         self.curr_link_selection["page"] = page_idx
+
+        link = self.curr_link_selection
+        link_data = {
+                "kind": link.get("kind"),
+                "from": qt_rect,
+                "page": link.get("page"),
+                "to": point_to_px(point_py_to_qt(link["to"]), zoom_factor) if "to" in link else None,
+                "to_dpi": point_py_to_qt(link["to"]) if "to" in link else from_rect_qt.topLeft(),
+                "uri": link.get("uri")
+            }
+
         page.insert_link(self.curr_link_selection)
-        self.curr_links.append(self.curr_link_selection)
+        # self.curr_links.append(link_data)
         self.curr_link_selection.clear()
+
+    # def extract_year_annot(self, word, word_rect, rect):
+    #     match = re.search(r"\d{4}[a-zA-Z]?", word)
+    #     word_len = len(word)
+    #     if  not match:
+    #         return None
+        
+    #     start_percent = (match.start() / word_len) * 100
+    #     end_percent = ((word_len - match.end()) / word_len) * 100
+
+    #     # priblizno oceni (procentualno) od kje do kje bi moral biti rect za letnico
+    #     width = word_rect.x1 - word_rect.x0
+    #     new_x0 = word_rect.x0 + width * (start_percent / 100)
+    #     new_x1 = word_rect.x1 - width * (end_percent / 100)
+    #     new_rect = pymupdf.Rect(new_x0, word_rect.y0, new_x1, word_rect.y1)
+    #     return new_rect
+
+    #     def extract_year_rect(self, page, origin_rect):
+    #         words = page.get_text("words")
+    #         for word in words:
+    #             word_rect = pymupdf.Rect(word[0], word[1], word[2], word[3])
+    #             if word_rect.intersects(origin_rect) and re.fullmatch(r"\d{4}[a-zA-Z]?", word[4]):
+    #                 pass
+
 
     @Slot()
     def get_config_data(self):
