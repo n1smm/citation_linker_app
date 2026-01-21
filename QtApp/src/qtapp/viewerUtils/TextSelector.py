@@ -47,36 +47,36 @@ class TextSelector(QObject):
         self.h_offset = stateObj["h_offset"]
 
     def handle_selection(self, geometry):
-        print("\n" + "="*60)
-        print("(normalize_pixel_to_page):")
-        print("="*60)
-        print(f"GEOMETRY - size: {geometry.size()}, x: {geometry.x()}, y: {geometry.y()}")
-        print(f"GEOMETRY - width: {geometry.width()}, height: {geometry.height()}")
-        print("curr page: ", self.current_page)
-        print("curr page size: ", self.current_document_size)
-        print("curr zoom factor", self.current_zoom_factor)
-        print("h offset: ", self.h_offset, ", w offset: ", self.w_offset)
+        # print("\n" + "="*60)
+        # print("(normalize_pixel_to_page):")
+        # print("="*60)
+        # print(f"GEOMETRY - size: {geometry.size()}, x: {geometry.x()}, y: {geometry.y()}")
+        # print(f"GEOMETRY - width: {geometry.width()}, height: {geometry.height()}")
+        # print("curr page: ", self.current_page)
+        # print("curr page size: ", self.current_document_size)
+        # print("curr zoom factor", self.current_zoom_factor)
+        # print("h offset: ", self.h_offset, ", w offset: ", self.w_offset)
         self.rect_changed.emit(geometry)
         rect = self.normalize_pixel_to_page(geometry)
 
-        print(f"OLD Result - size: {rect.size()}, x: {rect.x()}, y: {rect.y()}")
-        print(f"OLD Result - width: {rect.width()}, height: {rect.height()}")
+        # print(f"OLD Result - size: {rect.size()}, x: {rect.x()}, y: {rect.y()}")
+        # print(f"OLD Result - width: {rect.width()}, height: {rect.height()}")
         
         page_rect = px_to_dpi({
             "rect": rect,
             "current_zoom": self.current_zoom_factor,
             })
 
-        print(f"NEW Result - size: {page_rect.size()}, x: {page_rect.x()}, y: {page_rect.y()}")
-        print(f"NEW Result - width: {page_rect.width()}, height: {page_rect.height()}")
+        # print(f"NEW Result - size: {page_rect.size()}, x: {page_rect.x()}, y: {page_rect.y()}")
+        # print(f"NEW Result - width: {page_rect.width()}, height: {page_rect.height()}")
 
         self.current_rect = rect
         self.current_rectF = page_rect
         self.rectf_changed.emit(page_rect)
 
         new_viewport_rect = self.page_to_viewport_coords(rect)
-        print(f"VIEWPORT Result - size: {new_viewport_rect.size()}, x: {new_viewport_rect.x()}, y: {new_viewport_rect.y()}")
-        print(f"VIEWPORT Result - width: {new_viewport_rect.width()}, height: {new_viewport_rect.height()}")
+        # print(f"VIEWPORT Result - size: {new_viewport_rect.size()}, x: {new_viewport_rect.x()}, y: {new_viewport_rect.y()}")
+        # print(f"VIEWPORT Result - width: {new_viewport_rect.width()}, height: {new_viewport_rect.height()}")
         return page_rect
 
     @Slot()
@@ -145,12 +145,12 @@ class TextSelector(QObject):
 
 
         # print("scroll pos: ", scroll_pos_y, "page calc: ", curr_page)
-        print("doc dpi h: ", self.current_document_size.height(),
-              "doc dpi w: ", self.current_document_size.width())
+        # print("doc dpi h: ", self.current_document_size.height(),
+        #       "doc dpi w: ", self.current_document_size.width())
         # print("dpi x:", page_point_x, " dpi y:", page_point_y)
 
-        print("doc w px: ", doc_width, "view w px: ", view_width)
-        print("doc h px: ", doc_height, "view h px: ", view_height)
+        # print("doc w px: ", doc_width, "view w px: ", view_width)
+        # print("doc h px: ", doc_height, "view h px: ", view_height)
         # print("margin w: ", margin_w, "prev_x: ", rect.x(), "normalized_x: ", normalize_x)
         # print("margin h: ", margin_h, "prev_y: ", rect.y(), "normalized_y: ", normalize_y)
         rect.setX(int(round(normalize_x)))

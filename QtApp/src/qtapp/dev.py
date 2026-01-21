@@ -65,6 +65,7 @@ class CitationLinkerApp(QMainWindow):
         ### options
         self.text_handler.set_viewer(self.initial_viewer)
         self.document_config.hide()
+        self.connect_viewer_signals()
 
         self.switchViewers.setMaximumWidth(200)
         self.configToggle.setMaximumWidth(200)
@@ -125,6 +126,17 @@ class CitationLinkerApp(QMainWindow):
                                         "document": document,
                                         "text_handler": text_handler,
                                         "viewer": viewer})
+
+
+    def connect_viewer_signals(self):
+        for env in self.view_environments:
+            env["viewer"].link_saved.connect(self.send_link_data)
+
+    @Slot()
+    def send_link_data(self, data):
+        for env in self.view_environments:
+            env["viewer"].view.prev_selection = data["rect"]
+            env["viewer"].view.prev_viewport = data["viewport"]
 
 
     def open_output_view(self, output_file_path):

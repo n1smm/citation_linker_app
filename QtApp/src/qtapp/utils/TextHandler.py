@@ -25,6 +25,8 @@ class TextHandler(QObject):
         self.document = ""
         self.page = 0
         self.selected_text = ""
+        self.year_rect = None
+        self.year_page = None
         self.translated_rect = pymupdf.Rect()
         self.article_cache = []
         self.delimiters = []
@@ -54,11 +56,11 @@ class TextHandler(QObject):
         self.page = self.document.load_page(page_idx)
         rect_fitz = rect_qt_to_py(rectF)
         self.selected_text = self.page.get_text("text", clip=rect_fitz)
-        print("delimiters:", self.delimiters)
-        print("fitz rect: ", rect_fitz)
-        print("fitz text: ", self.selected_text)
-        print("delimiters:", self.delimiters)
-        print("special_cases", self.special_cases)
+        # print("delimiters:", self.delimiters)
+        # print("fitz rect: ", rect_fitz)
+        # print("fitz text: ", self.selected_text)
+        # print("delimiters:", self.delimiters)
+        # print("special_cases", self.special_cases)
 
     # TODO add uri links BREAKING
     def get_all_links(self, page_idx, zoom_factor):
@@ -183,7 +185,6 @@ class TextHandler(QObject):
 
         rect = rect_qt_to_py(selection)
         text = self.page.get_text("text", clip=rect)
-        print("pymupdf rect text: ", text)
         link_data = {
             "kind": pymupdf.LINK_GOTO,
             "from": rect,
@@ -192,15 +193,24 @@ class TextHandler(QObject):
             "link_page": self.page
         }
         self.curr_link_selection = link_data
+        # print(f"[link_creation] curr_link_selection set: {list(self.curr_link_selection.keys())}")
+        year_rect = self.extract_year_rect(self.page, pymupdf.Rect(rect))
+        # print(f"[link_creation] year_rect found: {year_rect is not None}")
+        if year_rect:
+            self.year_rect = year_rect
+            self.year_page = self.page.number
+
 
     def link_destination(self, selection, page_idx, zoom_factor=None):
         if not selection:
             print("nothing selected")
             return
 
+        # print(f"[link_destination] curr_link_selection keys before: {list(self.curr_link_selection.keys())}")
         rect = rect_qt_to_py(selection)
         point = rect.top_left
         page = self.curr_link_selection["link_page"]
+        # print(f"[link_destination] link_page type: {type(page)}, number: {page.number if hasattr(page, 'number') else 'N/A'}")
         del self.curr_link_selection["link_page"]
         
         # Convert the original "from" rect to pixels for display
@@ -219,36 +229,50 @@ class TextHandler(QObject):
                 "from": qt_rect,
                 "page": link.get("page"),
                 "to": point_to_px(point_py_to_qt(link["to"]), zoom_factor) if "to" in link else None,
-                "to_dpi": point_py_to_qt(link["to"]) if "to" in link else from_rect_qt.topLeft(),
+                "to_dpi": point_py_to_qt(link["to"]) if "to" in link else from_rect.topLeft(),
                 "uri": link.get("uri")
             }
 
-        page.insert_link(self.curr_link_selection)
-        # self.curr_links.append(link_data)
+        # print(f"[link_destination] About to insert link: {self.curr_link_selection}")
+        result = page.insert_link(self.curr_link_selection)
+        # print(f"[link_destination] insert_link result: {result}, links on page: {len(page.get_links())}")
+
+        self.curr_links.append(link_data)
         self.curr_link_selection.clear()
+        if self.year_rect:
+            # print(f"[link_destination] Adding year annotation on page {self.year_page.number if hasattr(self.year_page, 'number') else 'N/A'}")
+            year_page_fresh = self.document[self.year_page]
+            annot = year_page_fresh.add_underline_annot([self.year_rect])
+            # Don't call update() immediately - let it update naturally
+            # annot.update()
+            # print(f"[link_destination] Annotation added (without explicit update)")
 
-    # def extract_year_annot(self, word, word_rect, rect):
-    #     match = re.search(r"\d{4}[a-zA-Z]?", word)
-    #     word_len = len(word)
-    #     if  not match:
-    #         return None
+    def extract_year_annot(self, word, word_rect, rect):
+        match = re.search(r"\d{4}[a-zA-Z]?", word)
+        word_len = len(word)
+        if  not match:
+            return None
         
-    #     start_percent = (match.start() / word_len) * 100
-    #     end_percent = ((word_len - match.end()) / word_len) * 100
+        start_percent = (match.start() / word_len) * 100
+        end_percent = ((word_len - match.end()) / word_len) * 100
 
-    #     # priblizno oceni (procentualno) od kje do kje bi moral biti rect za letnico
-    #     width = word_rect.x1 - word_rect.x0
-    #     new_x0 = word_rect.x0 + width * (start_percent / 100)
-    #     new_x1 = word_rect.x1 - width * (end_percent / 100)
-    #     new_rect = pymupdf.Rect(new_x0, word_rect.y0, new_x1, word_rect.y1)
-    #     return new_rect
+        # approximately estimate (in percentage)
+        #from where to where the rect for the year should be
+        width = word_rect.x1 - word_rect.x0
+        new_x0 = word_rect.x0 + width * (start_percent / 100)
+        new_x1 = word_rect.x1 - width * (end_percent / 100)
+        new_rect = pymupdf.Rect(new_x0, word_rect.y0, new_x1, word_rect.y1)
+        return new_rect
 
-    #     def extract_year_rect(self, page, origin_rect):
-    #         words = page.get_text("words")
-    #         for word in words:
-    #             word_rect = pymupdf.Rect(word[0], word[1], word[2], word[3])
-    #             if word_rect.intersects(origin_rect) and re.fullmatch(r"\d{4}[a-zA-Z]?", word[4]):
-    #                 pass
+    def extract_year_rect(self, page, origin_rect):
+        words = page.get_text("words")
+        for word in words:
+            word_rect = pymupdf.Rect(word[0], word[1], word[2], word[3])
+            if word_rect.intersects(origin_rect):# and re.match(r"\d{4}[a-zA-Z]?", word[4]):
+                year_rect = self.extract_year_annot(word[4], word_rect, origin_rect)
+                if year_rect:
+                    return year_rect
+        return None
 
 
     @Slot()

@@ -23,7 +23,7 @@ class PopupWidget(QWidget):
         self.switch_buttons_to(alt)
         self.move(position)
         self.show()
-        print("position popup:" , position)
+        # print("position popup:" , position)
 
     def assign_buttons(self, buttons):
         if self.button_objs:

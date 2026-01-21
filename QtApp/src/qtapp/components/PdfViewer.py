@@ -17,6 +17,7 @@ from    qtapp.viewerUtils.ExtendedView  import ExtendedView
 
 class PdfViewer(QWidget):
     article_changed = Signal(dict, bool)
+    link_saved = Signal(dict)
 
     def __init__(self, parent=None, textHandler=None, isAlt=False, isOutput=False):
         super().__init__(parent)
