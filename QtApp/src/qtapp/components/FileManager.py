@@ -89,7 +89,14 @@ class FileManager(QWidget):
 
         def get_file_path(self):
             if self.file_path:
-                if Path(self.file_path).exists():
+                # For upload, check if file exists. For save, just return the path
+                if self.upload:
+                    if Path(self.file_path).exists():
+                        send_path = self.file_path
+                        self.file_path_extracted.emit()
+                        return send_path
+                else:
+                    # For saving, don't check existence (we're creating a new file)
                     send_path = self.file_path
                     self.file_path_extracted.emit()
                     return send_path

@@ -9,6 +9,7 @@ from    PySide6.QtWidgets               import  (QApplication,
                                                  QVBoxLayout)
 from    PySide6.QtPdf                   import  QPdfDocument#, QPdfPageNavigator, QPdfPageRenderer
 from    qtapp.components.PdfViewer      import  PdfViewer
+from    qtapp.components.FileManager    import  FileManager
 from    qtapp.utils.TextHandler         import  TextHandler
 from    qtapp.components.DocConfig      import  DocConfig
 from    qtapp.utils.Bridge              import  Bridge
@@ -37,6 +38,7 @@ class CitationLinkerApp(QMainWindow):
         self.is_input_view = True
         self.bridge = Bridge(self)
         self.document_config = DocConfig(self, self.bridge)
+        self.file_manager = FileManager(upload=False, pdf=True, parent=self)
 
         ###document/viewer environments
         self.create_document_env()
@@ -82,6 +84,7 @@ class CitationLinkerApp(QMainWindow):
         self.saveFile.clicked.connect(self.save_file_event)
         self.exitBtn.clicked.connect(QApplication.quit)
         self.bridge.linking_finished.connect(self.open_output_view)
+        self.file_manager.process_finished.connect(self.perform_save)
 
         ### appending
         self.init_viewers_ui()
@@ -273,7 +276,33 @@ class CitationLinkerApp(QMainWindow):
         for env in self.view_environments:
             if env["type"] == "output_doc":
                 pymu_doc = env["text_handler"].document
+        
+        # First: Save to output directory (original behavior)
         self.bridge.save_final_doc(pymu_doc)
+        
+        # Second: Ask user where to save a copy
+        self.file_manager.save_file()
+    
+    @Slot()
+    def perform_save(self):
+        save_path = self.file_manager.get_file_path()
+        if not save_path:
+            return
+        
+        pymu_doc = None
+        for env in self.view_environments:
+            if env["type"] == "output_doc":
+                pymu_doc = env["text_handler"].document
+        
+        if pymu_doc:
+            try:
+                pymu_doc.save(save_path)
+                QMessageBox.information(self, "Success", 
+                                      f"File saved to output directory and to:\n{save_path}")
+            except Exception as e:
+                QMessageBox.critical(self, "Error", f"Error saving copy to chosen location:\n{e}")
+        
+        self.file_manager.reset_manager(upload=False, pdf=True)
 
 
     def closeEvent(self, event):
