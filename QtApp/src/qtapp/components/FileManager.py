@@ -35,6 +35,7 @@ class FileManager(QWidget):
                 self.file_button = QPushButton("upload file/path")
             else:
                 self.file_button = QPushButton("save file")
+                self.file_button.hide()
             if pdf:
                 self.msg = "open PDF file"
                 self.search_params = "PDF Files (*.pdf);;All Files (*)"
