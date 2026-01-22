@@ -102,6 +102,15 @@ class CitationLinkerApp(QMainWindow):
 
 
     ### methods
+    def refresh_layout(self):
+        # container = self.centralWidget()
+        # print("central widget:" , container)
+        # container.hide()
+        # container.show()
+        self.hide()
+        self.show()
+        QApplication.processEvents()
+    
     def init_viewers_ui(self):
         for env in self.view_environments:
             if env["type"] == "input_doc":
@@ -127,19 +136,22 @@ class CitationLinkerApp(QMainWindow):
                                         "text_handler": text_handler,
                                         "viewer": viewer})
 
-
     def connect_viewer_signals(self):
         for env in self.view_environments:
             env["viewer"].link_saved.connect(self.send_link_data)
-
-    @Slot()
-    def send_link_data(self, data):
+    
+    def clear_text_handlers(self):
         for env in self.view_environments:
-            env["viewer"].view.prev_selection = data["rect"]
-            env["viewer"].view.prev_viewport = data["viewport"]
+            env["text_handler"].clear_all_config_info()
 
-
-    def open_output_view(self, output_file_path):
+    def open_output_view(self, success, output_file_path):
+        if not success:
+            QMessageBox.warning(self, "Linking Failed",
+                              "The linking process failed.\n"
+                              "Please check the configuration again\n"
+                              "and ensure all settings are correct.")
+            return
+        
         for env in self.view_environments:
             if env["type"] == "input_doc":
                 env["viewer"].hide()
@@ -150,8 +162,12 @@ class CitationLinkerApp(QMainWindow):
                 self.set_alt_viewer(env)
             self.document_config.hide()
             self.is_input_view = False
+            self.configToggle.setChecked(False)
+            self.configToggle.setText("config")
             self.switchViewers.setChecked(True)
             self.switchViewers.setText("input document")
+        
+        self.refresh_layout()
 
     def set_alt_viewer(self, env):
         viewer = env["viewer"]
@@ -192,9 +208,19 @@ class CitationLinkerApp(QMainWindow):
             pass
 
     @Slot()
+    def send_link_data(self, data):
+        for env in self.view_environments:
+            env["viewer"].view.prev_selection = data["rect"]
+            env["viewer"].view.prev_viewport = data["viewport"]
+
+    @Slot()
     def switch_views(self, checked):
+        if self.configToggle.isChecked():
+            self.configToggle.setChecked(False)
+            self.document_config.hide()
+        
         if not checked:
-            self.switchViewers.setText("upload document")
+            self.switchViewers.setText("output document")
             for env in self.view_environments:
                 if env["type"] == "input_doc":
                     env["viewer"].show()
@@ -202,13 +228,15 @@ class CitationLinkerApp(QMainWindow):
                     env["viewer"].hide()
             self.is_input_view = True
         else:
-            self.switchViewers.setText("output document")
+            self.switchViewers.setText("input document")
             for env in self.view_environments:
                 if env["type"] == "input_doc":
                     env["viewer"].hide()
                 else:
                     env["viewer"].show()
             self.is_input_view = False
+        
+        self.refresh_layout()
             
 
     @Slot()
@@ -236,6 +264,8 @@ class CitationLinkerApp(QMainWindow):
             for env in self.view_environments:
                 if env["type"] != "input_doc":
                     env["viewer"].show()
+        
+        self.refresh_layout()
 
     @Slot()
     def save_file_event(self):

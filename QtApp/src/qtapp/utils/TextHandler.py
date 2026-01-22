@@ -39,6 +39,7 @@ class TextHandler(QObject):
 
 
     ### methods
+
     def set_viewer(self, viewer):
         self.pdfViewer = viewer
 
@@ -51,6 +52,12 @@ class TextHandler(QObject):
         else:
             print("no document open")
 
+    def clear_all_config_info(self):
+        self.year_page = None
+        self.year_rect = None
+        self. article_cache = []
+        self.delimiters = []
+        self.special_cases = []
 
     def find_text(self, page_idx, rectF):
         self.page = self.document.load_page(page_idx)

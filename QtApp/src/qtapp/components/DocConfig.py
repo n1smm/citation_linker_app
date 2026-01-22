@@ -504,6 +504,8 @@ class DocConfig(QWidget):
         self.search_exclude_list.clear()
         self.alternative_bib_check.setChecked(False)
 
+        self.parent.clear_text_handlers()
+
         QMessageBox.information(self, "Cleared", "All fields cleared. Configure and save as needed.")
 
     def article_cache_to_list(self, data):
@@ -530,20 +532,20 @@ class DocConfig(QWidget):
 
     def set_data_from_view(self, config_data=None):
         if config_data:
-            if config_data["article_cache"]:
+            if "article_cache" in config_data:
                 self.article_cache = config_data["article_cache"]
                 article_list = self.article_cache_to_list(self.article_cache)
                 self.article_breaks_list.clear()
                 self.article_breaks_list.addItems(article_list)
 
 
-            if config_data["special_cases"]:
+            if "special_cases" in config_data:
                 self.special_cases = config_data["special_cases"]
                 self.special_case_list.clear()
                 for item in self.special_cases:
                     self.special_case_list.addItem(item)
 
-            if config_data["delimiters"]:
+            if "delimiters" in config_data:
                 self.delimiters = config_data["delimiters"]
                 self.delimiter_list.clear()
                 for item in self.delimiters:
@@ -566,9 +568,11 @@ class DocConfig(QWidget):
             self.parent.text_handler.delimiters = self.delimiters
 
         if field_name == "ARTICLE_BREAKS" or field_name == "ALL":
+            new_cache = self.article_list_to_cache(self.article_breaks_list)
             self.article_cache.clear()
-            self.article_cache = self.article_list_to_cache(self.article_breaks_list)
-            self.parent.text_handler.article_cache = self.article_cache
+            self.article_cache.extend(new_cache)
+            self.parent.text_handler.article_cache.clear()
+            self.parent.text_handler.article_cache.extend(new_cache)
                     
 
 

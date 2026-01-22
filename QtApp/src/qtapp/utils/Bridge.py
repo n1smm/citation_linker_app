@@ -9,7 +9,7 @@ from    PySide6.QtCore  import  QObject, Signal, Slot
 
 class Bridge(QObject):
     config_path_changed = Signal(str)
-    linking_finished = Signal(str)
+    linking_finished = Signal(bool, str)
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -88,8 +88,10 @@ class Bridge(QObject):
             output = result.stdout
             print ("output: ", output)
             print("stderr:", result.stderr)
+            return result.returncode
         except Exception as e:
-            print(f"Error modifying paths: {e}")
+            print(f"Error running process: {e}")
+            return 1
 
 
     # TODO change path also for citation-linker
@@ -124,11 +126,13 @@ class Bridge(QObject):
             cmd = "citation-multi-article"
 
         kwargs = self.set_kwargs(shell=True)
-        self.run_process(cmd, kwargs)
+        return_code = self.run_process(cmd, kwargs)
         self.output_file_path = output_file_path
         print("output file path: ", output_file_path)
-        self.linking_finished.emit(output_file_path)
-        return (output_file_path)
+        
+        success = return_code == 0 and os.path.exists(output_file_path)
+        self.linking_finished.emit(success, output_file_path)
+        return (success, output_file_path)
 
 
     def delete_files_in_dir(self, dir):
