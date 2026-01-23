@@ -1,3 +1,7 @@
+"""
+Text selection widget with rubber band visual feedback and coordinate transformation.
+Handles viewport-to-page coordinate conversion for PDF text selection.
+"""
 from    PySide6.QtCore                  import  Qt, QPointF, QPoint, QRect, QRectF, QSize, QSizeF, Slot, Signal, QObject
 from    PySide6.QtPdfWidgets            import  QPdfView
 from    PySide6.QtPdf                   import  QPdfDocument, QPdfPageNavigator, QPdfSelection
@@ -9,6 +13,15 @@ from    qtapp.utils.qtToPymuUtils       import px_to_dpi
 
 
 class TextSelector(QObject):
+    """
+    Manages text selection with rubber band and coordinate transformations.
+    
+    Parent: ExtendeView
+    Children: QRubberBand
+    
+    Handles mouse-driven text selection and converts between viewport pixel 
+    coordinates and PDF page coordinates, accounting for zoom, scroll, and margins.
+    """
 
     rect_changed = Signal(QRect)
     rectf_changed = Signal(QRectF)
@@ -36,6 +49,7 @@ class TextSelector(QObject):
 
     ### methods
     def set_curr_state(self, stateObj):
+        """ setter for member params on start of selection """
         self.current_page = stateObj["current_page"]
         self.current_zoom_mode = stateObj["current_zoom_mode"]
         self.current_zoom_factor = stateObj["current_zoom_factor"] 
@@ -47,6 +61,7 @@ class TextSelector(QObject):
         self.h_offset = stateObj["h_offset"]
 
     def handle_selection(self, geometry):
+        """ when selection set; handles transformation of rect """
         # print("\n" + "="*60)
         # print("(normalize_pixel_to_page):")
         # print("="*60)
@@ -107,6 +122,7 @@ class TextSelector(QObject):
 
     
     def normalize_pixel_to_page(self, geometry):
+        """ handles transformation from viewport to page coordinates """
         rect = QRect(geometry)
         viewport_pos = self.parent.view.viewport().pos()
         viewport_x = float(rect.x()) - float(viewport_pos.x())
@@ -159,6 +175,7 @@ class TextSelector(QObject):
         return rect
 
     def page_to_viewport_coords(self, page_rect):
+        """ inverse transformation of coordinates; page -> viewport """
         page_x = page_rect.x()
         page_y = page_rect.y()
 

@@ -1,3 +1,7 @@
+"""
+PDF text extraction and annotation management using PyMuPDF.
+Handles text selection, annotation operations, and link creation.
+"""
 import  re
 import  pymupdf
 from    PySide6.QtCore                  import  QPointF, QPoint, QRect, QSize, QObject, Slot
@@ -6,7 +10,22 @@ from    qtapp.utils.qtToPymuUtils       import  rect_py_to_qt, rect_qt_to_py, px
 
 
 class TextHandler(QObject):
+    """
+    Manages PDF text operations and annotations using PyMuPDF.
+    
+    Parent: QObject  
+    Children: None
+    
+    Responsibilities:
+    - PDF document management (open/close)
+    - Text extraction from selected regions
+    - Annotation retrieval and manipulation (underline, highlight, links)
+    - Link creation and destination management
+    - Year extraction from citations
+    - Configuration data management (delimiters, special cases, articles)
+    """
     def _del__(self):
+        """Clean up document resources."""
         if self.document:
             try:
                 self.document.close()
@@ -14,12 +33,10 @@ class TextHandler(QObject):
                 pass
 
     def __init__(self, parent=None):
+        """Initialize text handler."""
         super().__init__(parent)
 
 
-        ### local declarations
-
-        ### member declarations
         self.parent = parent
         self.pdfViewer = None
         self.document = ""
@@ -35,24 +52,23 @@ class TextHandler(QObject):
         self.curr_links = []
         self.curr_link_selection = {}
 
-        ### signals
-
-
-    ### methods
-
     def set_viewer(self, viewer):
+        """Associate this handler with a PDF viewer."""
         self.pdfViewer = viewer
 
     def assign_document(self, doc):
+        """Open and assign a PyMuPDF document from file path."""
         self.document = pymupdf.open(doc)
 
     def close_document(self):
+        """Close the currently open PyMuPDF document."""
         if self.document:
             self.document.close()
         else:
             print("no document open")
 
     def clear_all_config_info(self):
+        """Clear all configuration data (article cache, delimiters, special cases)."""
         self.year_page = None
         self.year_rect = None
         self. article_cache = []
@@ -60,6 +76,7 @@ class TextHandler(QObject):
         self.special_cases = []
 
     def find_text(self, page_idx, rectF):
+        """Extract text from specified rectangular region on page."""
         self.page = self.document.load_page(page_idx)
         rect_fitz = rect_qt_to_py(rectF)
         self.selected_text = self.page.get_text("text", clip=rect_fitz)
@@ -69,8 +86,8 @@ class TextHandler(QObject):
         # print("delimiters:", self.delimiters)
         # print("special_cases", self.special_cases)
 
-    # TODO add uri links BREAKING
     def get_all_links(self, page_idx, zoom_factor):
+        """Get all links on page with coordinates transformed for display."""
         doc = self.document
         page = doc[page_idx]
         self.page = page
@@ -96,6 +113,7 @@ class TextHandler(QObject):
         return links
 
     def get_all_annotations(self, page_idx, zoom_factor):
+        """Get all annotations on page with coordinates transformed for display."""
         doc = self.document
         self.curr_page_idx = page_idx
         page = doc[page_idx]
@@ -139,14 +157,14 @@ class TextHandler(QObject):
         return annotations
 
     def get_annot_from_idx(self, annot_idx):
-        
+        """Retrieve annotation object by index from current page."""
         for idx, annot in enumerate(self.page.annots()):
             if idx == annot_idx:
                 return annot
         return None
 
-
     def annot_action(self, annot_idx, action, new_rect=None):
+        """Perform action on annotation (delete, toggle_type, update_rect)."""
         annot = self.get_annot_from_idx(annot_idx)
 
         if not annot:
@@ -171,8 +189,8 @@ class TextHandler(QObject):
         else:
             print("Invalid action or missing new_rect.")
 
-
     def link_action(self, link_idx, action, new_dest=None):
+        """Perform action on link (delete or change destination)."""
         link = self.curr_links[link_idx]
 
         if not link:
@@ -184,8 +202,8 @@ class TextHandler(QObject):
             link["to"] = new_dest
             self.page.update_link(link)
 
-
     def link_creation(self, selection):
+        """Create new link from selected region, extract year for annotation."""
         if not selection:
             print("nothing selected")
             return
@@ -200,24 +218,20 @@ class TextHandler(QObject):
             "link_page": self.page
         }
         self.curr_link_selection = link_data
-        # print(f"[link_creation] curr_link_selection set: {list(self.curr_link_selection.keys())}")
         year_rect = self.extract_year_rect(self.page, pymupdf.Rect(rect))
-        # print(f"[link_creation] year_rect found: {year_rect is not None}")
         if year_rect:
             self.year_rect = year_rect
             self.year_page = self.page.number
 
-
     def link_destination(self, selection, page_idx, zoom_factor=None):
+        """Set destination for previously created link and add year annotation."""
         if not selection:
             print("nothing selected")
             return
 
-        # print(f"[link_destination] curr_link_selection keys before: {list(self.curr_link_selection.keys())}")
         rect = rect_qt_to_py(selection)
         point = rect.top_left
         page = self.curr_link_selection["link_page"]
-        # print(f"[link_destination] link_page type: {type(page)}, number: {page.number if hasattr(page, 'number') else 'N/A'}")
         del self.curr_link_selection["link_page"]
         
         # Convert the original "from" rect to pixels for display
@@ -240,21 +254,17 @@ class TextHandler(QObject):
                 "uri": link.get("uri")
             }
 
-        # print(f"[link_destination] About to insert link: {self.curr_link_selection}")
         result = page.insert_link(self.curr_link_selection)
-        # print(f"[link_destination] insert_link result: {result}, links on page: {len(page.get_links())}")
 
         self.curr_links.append(link_data)
         self.curr_link_selection.clear()
         if self.year_rect:
-            # print(f"[link_destination] Adding year annotation on page {self.year_page.number if hasattr(self.year_page, 'number') else 'N/A'}")
             year_page_fresh = self.document[self.year_page]
             annot = year_page_fresh.add_underline_annot([self.year_rect])
-            # Don't call update() immediately - let it update naturally
             # annot.update()
-            # print(f"[link_destination] Annotation added (without explicit update)")
 
     def extract_year_annot(self, word, word_rect, rect):
+        """Extract year rectangle from word containing year pattern (YYYY or YYYYa)."""
         match = re.search(r"\d{4}[a-zA-Z]?", word)
         word_len = len(word)
         if  not match:
@@ -272,6 +282,7 @@ class TextHandler(QObject):
         return new_rect
 
     def extract_year_rect(self, page, origin_rect):
+        """Find and extract year rectangle from page region intersecting origin_rect."""
         words = page.get_text("words")
         for word in words:
             word_rect = pymupdf.Rect(word[0], word[1], word[2], word[3])
@@ -281,9 +292,9 @@ class TextHandler(QObject):
                     return year_rect
         return None
 
-
     @Slot()
     def get_config_data(self):
+        """Return configuration data (article cache, special cases, delimiters)."""
         return {
                 "article_cache": self.article_cache,
                 "special_cases": self.special_cases,

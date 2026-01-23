@@ -1,3 +1,7 @@
+"""
+Bridge between Qt GUI and citation linker CLI tools.
+Manages subprocess execution and path configuration.
+"""
 import  re
 import  os
 import  sys
@@ -8,14 +12,25 @@ from    pathlib         import  Path
 from    PySide6.QtCore  import  QObject, Signal, Slot
 
 class Bridge(QObject):
+    """
+    Interface between Qt UI and citation-linker CLI.
+    
+    Parent: QObject
+    Children: None
+    
+    Handles:
+    - Configuration path management via citation-config
+    - Subprocess execution of citation linking tools
+    - Input/output directory management
+    - Document saving and file operations
+    """
     config_path_changed = Signal(str)
     linking_finished = Signal(bool, str)
 
     def __init__(self, parent=None):
+        """Initialize bridge with parent app reference."""
         super().__init__(parent)
 
-
-        ### member declarations
         self.parent = parent
         self.input_location = ""
         self.input_dir = ""
@@ -27,8 +42,8 @@ class Bridge(QObject):
         self.config_path = self.get_config_path()
 
 
-
     def get_user_shell(self):
+        """Detect and return user's shell."""
         user_shell = os.environ.get("SHELL")
         if not user_shell and sys.platform == "win32":
             user_shell = os.environ.get("COMSPEC", "cmd.exe")
@@ -36,6 +51,18 @@ class Bridge(QObject):
         return user_shell
 
     def get_config_path(self):
+        """
+        Retrieve configuration paths from citation-config CLI tool.
+        
+        Executes 'citation-config --list' and parses the output to extract:
+        - Config file location
+        - Input directory
+        - Output directory
+        - Input/output location files
+        
+        Returns:
+            str: Path to the configuration file
+        """
         self.get_input_file_path()
         user_shell = self.get_user_shell()
         cmd  = "citation-config --list"
@@ -69,9 +96,19 @@ class Bridge(QObject):
             print(f"Error getting config path: {e}")
 
     def get_input_file_path(self):
+        """Get the current input file path from parent application."""
         self.input_file_path = self.parent.upload_path
 
     def set_kwargs(self, shell=True):
+        """
+        Configure subprocess keyword arguments for shell command execution.
+        
+        Args:
+            shell: Whether to use shell execution (default: True)
+            
+        Returns:
+            dict: Keyword arguments for subprocess.run()
+        """
         kwargs = {
                 "shell": shell,
                 "capture_output": True,
@@ -82,6 +119,16 @@ class Bridge(QObject):
         return kwargs
 
     def run_process(self, cmd, kwargs):
+        """
+        Execute a shell command and return its exit code.
+        
+        Args:
+            cmd: Command string to execute
+            kwargs: Keyword arguments for subprocess.run()
+            
+        Returns:
+            int: Exit code (0 for success, non-zero for failure)
+        """
         try:
             print("cmd:", cmd)
             result = subprocess.run(cmd, **kwargs)
@@ -94,9 +141,18 @@ class Bridge(QObject):
             return 1
 
 
-    # TODO change path also for citation-linker
     def set_paths(self, input_dir=None, output_dir=None, config_path=None):
-        # cmd = ["citation-config"]
+        """
+        Update input/output/config paths via citation-config CLI tool.
+        
+        Executes citation-config with --input, --output, and/or --config flags
+        to persist path changes. Emits config_path_changed signal if config path is set.
+        
+        Args:
+            input_dir: Path to input directory (optional)
+            output_dir: Path to output directory (optional)
+            config_path: Path to configuration file (optional)
+        """
         cmd = "citation-config"
         if input_dir:
            cmd += f" --input {input_dir}"
@@ -106,12 +162,27 @@ class Bridge(QObject):
             self.config_path_changed.emit(config_path)
             cmd += f" --config {config_path}"
 
-        # cmd = ["citation-config", "--input", input_dir, "--output", output_dir]
         kwargs = self.set_kwargs(shell=True)
         self.run_process(cmd, kwargs)
 
-    # TODO handle errors in citation-linker
     def start_linking_process(self, cmd_in=None):
+        """
+        Execute the citation linking process via CLI tool.
+        
+        Workflow:
+        1. Save current configuration
+        2. Copy input PDF to input directory
+        3. Execute citation linking CLI (citation-multi-article by default)
+        4. Verify output file was created
+        5. Emit linking_finished signal with success status
+        
+        Args:
+            cmd_in: CLI command to use (citation-linker, citation-multi-file, 
+                   or citation-multi-article). Defaults to citation-multi-article.
+                   
+        Returns:
+            tuple: (success: bool, output_file_path: str)
+        """
         self.parent.document_config.save_config()
         self.get_input_file_path()
         base, ext = os.path.splitext(os.path.basename(self.input_file_path))
@@ -136,18 +207,35 @@ class Bridge(QObject):
 
 
     def delete_files_in_dir(self, dir):
+        """
+        Delete all files in the specified directory.
+        
+        Used to clean the input directory before copying new PDF.
+        Subdirectories are not removed.
+        
+        Args:
+            dir: Directory path (currently unused, uses self.input_dir)
+        """
         for filename in os.listdir(self.input_dir):
             file_path = os.path.join(self.input_dir, filename)
             if os.path.isfile(file_path):
                 os.remove(file_path)
 
     def save_final_doc(self, pymu_doc):
+        """
+        Save the final processed document to output location.
+        
+        Uses atomic write (save to .tmp then replace) to avoid corruption
+        if save fails partway through.
+        
+        Args:
+            pymu_doc: PyMuPDF document object to save
+        """
         if pymu_doc:
             temp_path = self.output_file_path + ".tmp"
             pymu_doc.save(temp_path)
             os.replace(temp_path, self.output_file_path)
             print("file saved")
-        pass
 
 
 

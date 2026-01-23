@@ -1,3 +1,25 @@
+"""
+Popup context menu widget for annotation and citation actions.
+"""
+from PySide6.QtWidgets import QWidget, QPushButton, QVBoxLayout
+from PySide6.QtCore import QPoint, Qt, Slot
+
+
+class PopupWidget(QWidget):
+    """
+    Popup menu widget for context-sensitive actions.
+    
+    Parent: QWidget (with Qt.Popup flag)
+    Children: QPushButton instances
+    
+    Provides switchable button sets for different contexts:
+    - Main buttons: bibliography, special_case (input mode)
+    - Main buttons: add_link, add_destination (output mode)
+    - Alt buttons: delete (for existing annotations/links)
+    """
+    def __init__(self, parent=None, position=QPoint(0, 0), buttons=None):
+        """Initialize popup with buttons at specified position."""
+        super().__init__(parent)
 from PySide6.QtWidgets import QWidget, QPushButton, QVBoxLayout
 from PySide6.QtCore import QPoint, Qt, Slot
 

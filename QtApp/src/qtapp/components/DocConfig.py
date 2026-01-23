@@ -1,3 +1,7 @@
+"""
+Document configuration management UI for citation linking settings.
+Provides forms for all configuration options with load/save functionality.
+"""
 import  re
 import  os
 import  sys
@@ -23,9 +27,27 @@ from    PySide6.QtWidgets               import  (QWidget,
 from    qtapp.components.FileManager    import  FileManager
 
 class DocConfig(QWidget):
+    """
+    Document configuration UI for citation linking parameters.
+    
+    Parent: mainWindow
+    Children: FileManager, QListWidget, QComboBox, QCheckBox, QPushButton
+    
+    Manages all citation linking configuration including:
+    - Special case citations (ibid, op. cit., etc.)
+    - Bibliography delimiter detection
+    - Annotation type and color
+    - Article break page ranges for multi-article documents
+    - Search options (soft year, deep search, alternative bib format)
+    - Configuration file loading and saving
+    
+    Configuration is synchronized with text handlers and persisted to disk.
+    Provides help dialogs for each configuration field.
+    """
     list_widget_changed = Signal(str, QListWidget)
 
     def __init__(self, parent=None, bridge=None):
+        """Initialize configuration UI with all fields and load existing config."""
         super().__init__(parent)
 
         ### member declarations
@@ -62,8 +84,8 @@ class DocConfig(QWidget):
         if self.config_path and os.path.exists(self.config_path):
             self.load_config()
 
-    ### ui init
     def init_ui(self):
+        """Build the configuration user interface with all form fields."""
         main_layout = QVBoxLayout(self)
 
         # Scroll area for config fields
@@ -331,11 +353,11 @@ class DocConfig(QWidget):
         self.current_list_widget = list_widget
 
     def show_help(self, title, message):
-        """Show help dialog"""
+        """Display help dialog for a configuration field."""
         QMessageBox.information(self, title, message)
 
-
     def set_config_path(self):
+        """Prompt user to select configuration file path."""
         self.file_manager.show()
         self.file_manager.open_file()
         self.config_path = self.file_manager.get_file_path()
@@ -344,6 +366,7 @@ class DocConfig(QWidget):
         self.parent.bridge.set_paths(config_path=self.config_path)
 
     def set_input_dir(self):
+        """Prompt user to select input directory."""
         self.file_manager.show()
         self.file_manager.open_dir()
         self.input_dir = self.file_manager.get_dir_path()
@@ -352,6 +375,7 @@ class DocConfig(QWidget):
         self.parent.bridge.set_paths(input_dir=self.input_dir)
 
     def set_output_dir(self):
+        """Prompt user to select output directory."""
         self.file_manager.show()
         self.file_manager.open_dir()
         self.output_dir = self.file_manager.get_dir_path()
@@ -360,11 +384,11 @@ class DocConfig(QWidget):
         self.parent.bridge.set_paths(output_dir=self.output_dir)
 
     def on_config_path_change(self, path):
+        """Handle configuration path change signal."""
         self.config_path = path
 
-
     def parse_config_line(self, line):
-        """Parse a single config line"""
+        """Parse a single line from configuration file."""
         line = line.strip()
         if not line or line.startswith("#"):
             return None, None
@@ -379,7 +403,7 @@ class DocConfig(QWidget):
         return key, value
 
     def parse_list_value(self, value):
-        """Parse comma-separated quoted values"""
+        """Parse comma-separated quoted values from config."""
         if not value:
             return []
 
@@ -388,7 +412,7 @@ class DocConfig(QWidget):
         return matches
 
     def load_config(self):
-        """Load config from file"""
+        """Load configuration from file."""
         if not self.config_path or not os.path.exists(self.config_path):
             QMessageBox.warning(self, "Config Not Found",
                               f"Config file not found at: {self.config_path or 'unknown path'}")
@@ -443,14 +467,14 @@ class DocConfig(QWidget):
             QMessageBox.critical(self, "Error", f"Error loading config: {e}")
 
     def format_list_value(self, list_widget):
-        """Format list widget items as comma-separated quoted strings"""
+        """Format list widget items as comma-separated quoted strings."""
         items = []
         for i in range(list_widget.count()):
             items.append(f'"{list_widget.item(i).text()}"')
         return ", ".join(items) if items else ""
 
     def save_config(self):
-        """Save config to file"""
+        """Save configuration to file."""
         if not self.config_path:
             QMessageBox.warning(self, "No Config Path",
                               "Config path not set. Cannot save.")
@@ -491,7 +515,7 @@ class DocConfig(QWidget):
             QMessageBox.critical(self, "Error", f"Error saving config: {e}")
 
     def clear_all_fields(self):
-        """Clear all fields for new config"""
+        """Clear all configuration fields."""
         self.debug_check.setChecked(False)
         self.special_case_list.clear()
         self.delimiter_list.clear()
@@ -509,7 +533,7 @@ class DocConfig(QWidget):
         QMessageBox.information(self, "Cleared", "All fields cleared. Configure and save as needed.")
 
     def article_cache_to_list(self, data):
-        """ bridge between 0 index to 1 index struct for aritcles """
+        """Convert zero-based article cache to one-based string list for display."""
         full_list = []
         for pair in data:
             first = pair["first"] + 1
@@ -519,6 +543,7 @@ class DocConfig(QWidget):
         return full_list
     
     def article_list_to_cache(self, data):
+        """Convert one-based string list to zero-based article cache."""
         cache = []
         for i in range(data.count()):
             tokens = data.item(i).text().split(":")
@@ -531,6 +556,7 @@ class DocConfig(QWidget):
         return cache
 
     def set_data_from_view(self, config_data=None):
+        """Update configuration from viewer data."""
         if config_data:
             if "article_cache" in config_data:
                 self.article_cache = config_data["article_cache"]
@@ -554,7 +580,7 @@ class DocConfig(QWidget):
         self.update()
 
     def list_widget_update(self, field_name, widget=None):
-        """ setting data from config back to document viewed """
+        """Update TextHandler when list widgets change."""
         if field_name == "SPECIAL_CASE" or field_name == "ALL":
             self.special_cases.clear()
             for i in range(self.special_case_list.count()):

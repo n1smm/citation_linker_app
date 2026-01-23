@@ -1,3 +1,6 @@
+"""
+File selection widget for opening and saving PDF files.
+"""
 from    pathlib                     import  Path
 from    PySide6.QtCore              import  Qt, QFile, Slot, Signal
 from    PySide6.QtWidgets           import  (QWidget,
@@ -9,6 +12,15 @@ from    PySide6.QtWidgets           import  (QWidget,
 
 
 class FileManager(QWidget):
+        """
+        File upload/save manager with dialog handling.
+        
+        Parent: mainWindow
+        Children: QPushButton, QFileDialog
+        
+        Manages file selection for both upload (open) and save operations.
+        Emits signals when file selection is complete.
+        """
 
         ### declared signals
         process_finished = Signal()

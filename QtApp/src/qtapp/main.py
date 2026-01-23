@@ -1,3 +1,7 @@
+"""
+Main application module for the Citation Linker Qt application.
+Provides the user interface for linking citations in PDF documents to their bibliography entries.
+"""
 import  sys
 import  os
 from    PySide6.QtCore                  import  Slot
@@ -17,21 +21,36 @@ from    qtapp.components.DocConfig      import  DocConfig
 from    qtapp.utils.Bridge              import  Bridge
 
 class CitationLinkerApp(QMainWindow):
+    """
+    Main application window for Citation Linker.
+    
+    Parent: QMainWindow (from PySide6.QtWidgets)
+    Children: PdfViewer, FileManager, DocConfig, TextHandler, Bridge
+    
+    This class orchestrates the entire citation linking workflow including:
+    - PDF file upload and viewing
+    - Citation configuration management
+    - Document processing and link creation
+    - Output file generation and saving
+    
+    The application manages multiple document environments (input and output views)
+    and provides UI controls for switching between configuration and viewing modes.
+    """
     def __init__(self):
+        """Initialize the main application window and all its components."""
         super().__init__()
 
-        ### local declarations
         container = QWidget()
         self.upload_path = ""
 
-        ### layout
+
         self.layout = QVBoxLayout(container)
         self.horizontal_bar = QHBoxLayout()
         self.input_layout = QHBoxLayout()
         self.output_layout = QHBoxLayout()
         self.setCentralWidget(container)
 
-        ### cross document objects
+
         self.view_environments = []
         self.is_input_view = True
         self.bridge = Bridge(self)
@@ -39,12 +58,11 @@ class CitationLinkerApp(QMainWindow):
         self.upload_file_manager = FileManager(upload=True, pdf=True, parent=self)
         self.save_file_manager = FileManager(upload=False, pdf=True, parent=self)
 
-        ###document/viewer environments
         self.create_document_env()
         self.create_document_env("output_doc", output=True)
         self.create_document_env("output_alt", alt=True, output=True)
 
-        ### components (input doc view env)
+
         self.document = next(env["document"]
                              for env in self.view_environments if 
                              env["type"] == "input_doc")
@@ -55,18 +73,17 @@ class CitationLinkerApp(QMainWindow):
                                    for env in self.view_environments if 
                                    env["type"] == "input_doc")
 
-        ### buttons
+
         self.configToggle = QPushButton("config")
         self.startProcess = QPushButton("start linking")
         self.switchViewers = QPushButton("output document")
         self.saveFile = QPushButton("save file")
         self.exitBtn = QPushButton("🗙")
         
-        ### filename label
         self.filenameLabel = QLabel("")
         self.filenameLabel.setStyleSheet("font-weight: bold; font-size: 14px;")
 
-        ### options
+
         self.text_handler.set_viewer(self.initial_viewer)
         self.document_config.hide()
         self.connect_viewer_signals()
@@ -79,7 +96,7 @@ class CitationLinkerApp(QMainWindow):
         self.configToggle.setCheckable(True)
         self.switchViewers.setCheckable(True)
 
-        ### signals
+
         self.upload_file_manager.process_finished.connect(self.file_upload)
         self.configToggle.toggled.connect(self.toggle_config)
         self.switchViewers.toggled.connect(self.switch_views)
@@ -89,7 +106,7 @@ class CitationLinkerApp(QMainWindow):
         self.bridge.linking_finished.connect(self.open_output_view)
         self.save_file_manager.process_finished.connect(self.perform_save)
 
-        ### appending - Start with file upload UI
+
         self.layout.addWidget(self.upload_file_manager)
         self.layout.addWidget(self.filenameLabel)
         self.horizontal_bar.setContentsMargins(50, 2, 50, 2)
@@ -107,7 +124,7 @@ class CitationLinkerApp(QMainWindow):
         self.layout.addLayout(self.output_layout)
         self.layout.addWidget(self.document_config)
 
-        # Hide main UI until file is uploaded
+
         self.filenameLabel.hide()
         self.configToggle.hide()
         self.startProcess.hide()
@@ -117,22 +134,30 @@ class CitationLinkerApp(QMainWindow):
         self.document_config.hide()
 
 
-    ### methods
     def refresh_layout(self):
+        """Force UI refresh by hiding and showing the main window."""
         self.hide()
         self.show()
         QApplication.processEvents()
     
     def init_viewers_ui(self):
+        """Initialize and display all viewer widgets in their respective layouts."""
         for env in self.view_environments:
             if env["type"] == "input_doc":
                 self.input_layout.addWidget(env["viewer"])
                 self.document_config.list_widget_changed.emit("ALL", None)
             else:
                 self.output_layout.addWidget(env["viewer"])
-
         
     def create_document_env(self, view_type="input_doc", alt=False, output=False):
+        """
+        Create a document viewing environment with associated handlers and viewers.
+        
+        Args:
+            view_type: Type identifier for the environment ("input_doc", "output_doc", "output_alt")
+            alt: Whether this is an alternative viewer (shares document with previous environment)
+            output: Whether this is an output viewer (for processed documents)
+        """
         if alt:
             document = self.view_environments[-1]["document"]
             text_handler = self.view_environments[-1]["text_handler"]
@@ -149,14 +174,23 @@ class CitationLinkerApp(QMainWindow):
                                         "viewer": viewer})
 
     def connect_viewer_signals(self):
+        """Connect link_saved signals from all viewers to the data handler."""
         for env in self.view_environments:
             env["viewer"].link_saved.connect(self.send_link_data)
     
     def clear_text_handlers(self):
+        """Clear configuration data from all text handlers."""
         for env in self.view_environments:
             env["text_handler"].clear_all_config_info()
 
     def open_output_view(self, success, output_file_path):
+        """
+        Open the output view showing the processed PDF with linked citations.
+        
+        Args:
+            success: Whether the linking process completed successfully
+            output_file_path: Path to the generated output PDF file
+        """
         if not success:
             QMessageBox.warning(self, "Linking Failed",
                               "The linking process failed.\n"
@@ -182,6 +216,12 @@ class CitationLinkerApp(QMainWindow):
         self.refresh_layout()
 
     def set_alt_viewer(self, env):
+        """
+        Configure the alternative viewer to display article-specific content.
+        
+        Args:
+            env: The viewer environment dictionary containing the viewer to configure
+        """
         viewer = env["viewer"]
         if viewer.is_alt == False:
             return
@@ -202,6 +242,7 @@ class CitationLinkerApp(QMainWindow):
         
 
     def file_upload(self):
+        """Handle the file upload process and initialize the main viewer UI."""
         self.upload_path = self.upload_file_manager.get_file_path()
         if not self.upload_path:
             return
@@ -224,6 +265,7 @@ class CitationLinkerApp(QMainWindow):
         self.init_viewers_ui()
 
     def start_linking_process(self):
+        """Initiate the citation linking process after user confirmation."""
         update_data = self.text_handler.get_config_data()
         print(update_data)
         self.document_config.set_data_from_view(update_data)
@@ -239,12 +281,24 @@ class CitationLinkerApp(QMainWindow):
 
     @Slot()
     def send_link_data(self, data):
+        """
+        Distribute link selection data to all viewer environments.
+        
+        Args:
+            data: Dictionary containing 'rect' and 'viewport' for link highlighting
+        """
         for env in self.view_environments:
             env["viewer"].view.prev_selection = data["rect"]
             env["viewer"].view.prev_viewport = data["viewport"]
 
     @Slot()
     def switch_views(self, checked):
+        """
+        Toggle between input document and output document views.
+        
+        Args:
+            checked: True for output view, False for input view
+        """
         if self.configToggle.isChecked():
             self.configToggle.setChecked(False)
             self.document_config.hide()
@@ -270,6 +324,12 @@ class CitationLinkerApp(QMainWindow):
 
     @Slot()
     def toggle_config(self, checked):
+        """
+        Toggle between configuration panel and viewer display.
+        
+        Args:
+            checked: True to show config panel, False to show viewer
+        """
         if checked:
             self.configToggle.setText("viewer")
             for env in self.view_environments:
@@ -293,6 +353,7 @@ class CitationLinkerApp(QMainWindow):
 
     @Slot()
     def save_file_event(self):
+        """Handle the file save event by saving to output directory and prompting for user location."""
         pymu_doc = None
         for env in self.view_environments:
             if env["type"] == "output_doc":
@@ -306,6 +367,7 @@ class CitationLinkerApp(QMainWindow):
     
     @Slot()
     def perform_save(self):
+        """Save a copy of the output document to a user-specified location."""
         save_path = self.save_file_manager.get_file_path()
         if not save_path:
             return
@@ -326,6 +388,7 @@ class CitationLinkerApp(QMainWindow):
         self.save_file_manager.reset_manager(upload=False, pdf=True)
 
     def closeEvent(self, event):
+        """Clean up resources when the application window is closed."""
         for env in self.view_environments:
             env["text_handler"].close_document()
             doc = env["document"]
@@ -335,6 +398,7 @@ class CitationLinkerApp(QMainWindow):
 
 
 def main():
+    """Initialize and run the Citation Linker application."""
     app = QApplication()
     citationLinkerApp = CitationLinkerApp()
     citationLinkerApp.show()

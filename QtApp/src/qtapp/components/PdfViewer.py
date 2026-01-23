@@ -1,14 +1,16 @@
+"""
+Main PDF viewer component integrating navigation, zoom, and extended view.
+Manages document loading and multi-article tracking.
+"""
 from    PySide6.QtCore                  import  Qt, QFile, Slot, Signal
 from    PySide6.QtWidgets               import  (QWidget,
                                                 QPushButton,
                                                 QHBoxLayout,
                                                 QRubberBand,
                                                 QVBoxLayout)
-#qt pdf imports
 from    PySide6.QtPdf                   import  QPdfDocument
 from    PySide6.QtPdfWidgets            import  QPdfView
 
-#local
 from    qtapp.viewerUtils.Navigator     import PdfNavigator
 from    qtapp.viewerUtils.ZoomSelector  import ZoomSelector
 from    qtapp.viewerUtils.TextSelector  import TextSelector
@@ -16,10 +18,25 @@ from    qtapp.viewerUtils.ExtendedView  import ExtendedView
 
 
 class PdfViewer(QWidget):
+    """
+    Complete PDF viewing widget with navigation and text handling.
+    
+    Parent: MainWindow
+    Children: PdfNavigator, ZoomSelector, TextSelector, ExtendedView
+    
+    Integrates all PDF viewing components:
+    - Document loading and display
+    - Page navigation controls
+    - Zoom level controls  
+    - Text selection and annotation
+    - Multi-article document tracking
+    - Alternative viewer synchronization
+    """
     article_changed = Signal(dict, bool)
     link_saved = Signal(dict)
 
     def __init__(self, parent=None, textHandler=None, isAlt=False, isOutput=False):
+        """Initialize PDF viewer with all components."""
         super().__init__(parent)
         print("initing pdf viewer")
 

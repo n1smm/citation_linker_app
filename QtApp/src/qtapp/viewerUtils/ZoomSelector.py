@@ -1,10 +1,23 @@
 from    PySide6.QtPdfWidgets    import QPdfView
+"""
+Zoom level selector widget for PDF viewing.
+Provides preset zoom levels and custom zoom input.
+"""
 from    PySide6.QtWidgets       import QComboBox
 from    PySide6.QtCore          import Signal, Slot
 
 
 
 class ZoomSelector(QComboBox):
+    """
+    Combo box for selecting PDF zoom level.
+    
+    Parent: ExtendedView
+    Children: None
+    
+    Provides predefined zoom levels (Fit Width, Fit Page, percentages)
+    and supports custom zoom percentage entry.
+    """
     
     zoom_mode_changed = Signal(QPdfView.ZoomMode)
     zoom_factor_changed = Signal(float)

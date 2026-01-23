@@ -1,3 +1,7 @@
+"""
+Coordinate and rectangle conversion utilities between Qt and PyMuPDF.
+Handles DPI/pixel transformations and zoom factor calculations.
+"""
 import  pymupdf
 from    PySide6.QtCore  import  QPointF, QPoint, QRectF, QSizeF, QRect, QSize
 
@@ -10,26 +14,31 @@ rect info
 
 
 def point_py_to_qt(point_py):
+    """Convert PyMuPDF Point to Qt QPointF."""
     point_qt = QPointF(point_py.x, point_py.y)
     return point_qt
 
 def point_qt_to_py(point_qt):
+    """Convert Qt QPointF to PyMuPDF Point."""
     point_py = pymupdf.Point(point_qt.x(), point_qt.y())
     return point_py
 
 def rect_py_to_qt(rect_py):
+    """Convert PyMuPDF Rect to Qt QRectF."""
     top_left = point_py_to_qt(rect_py.top_left)
     bottom_right = point_py_to_qt(rect_py.bottom_right)
     rect_qt = QRectF(top_left, bottom_right)
     return rect_qt
 
 def rect_qt_to_py(rect_qt):
+    """Convert Qt QRectF to PyMuPDF Rect."""
     top_left = point_qt_to_py(rect_qt.topLeft())
     bottom_right = point_qt_to_py(rect_qt.bottomRight())
     rect_py = pymupdf.Rect(top_left, bottom_right)
     return rect_py
 
 def point_to_px(point, zoom_factor):
+    """Convert point from page coordinates to pixel coordinates."""
     new_point = QPoint(0,0)
     new_point.setX(point.x() / zoom_factor)
     new_point.setY(point.y() / zoom_factor)
@@ -37,6 +46,7 @@ def point_to_px(point, zoom_factor):
 
 
 def px_to_dpi(rect_info):
+    """Convert rectangle from pixel to DPI coordinates."""
     rect = rect_info["rect"]
     zoom_factor = rect_info["current_zoom"]
 
@@ -51,6 +61,7 @@ def px_to_dpi(rect_info):
     return page_rect
 
 def dpi_to_px(rect_info):
+    """Convert rectangle from DPI to pixel coordinates."""
     rect = rect_info["rect"]
     zoom_factor = rect_info["current_zoom"]
 
