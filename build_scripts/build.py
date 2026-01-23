@@ -4,6 +4,7 @@ Build script for Citation Linker app
 Builds executable for current platform
 """
 
+import os
 import subprocess
 import sys
 import shutil
