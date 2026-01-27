@@ -32,7 +32,7 @@ def build_executable():
     """Build the executable using PyInstaller"""
     print(f"Building for {sys.platform}...")
     subprocess.run([
-        'pyinstaller',
+        sys.executable, '-m', 'PyInstaller',
         'citation_linker.spec',
         '--clean',  # Clean PyInstaller cache
     ], check=True)

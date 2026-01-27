@@ -4,6 +4,7 @@ Provides the user interface for linking citations in PDF documents to their bibl
 """
 import  sys
 import  os
+import  time
 from    PySide6.QtCore                  import  Slot
 from    PySide6.QtWidgets               import  (QApplication,
                                                  QMessageBox,
@@ -359,10 +360,8 @@ class CitationLinkerApp(QMainWindow):
             if env["type"] == "output_doc":
                 pymu_doc = env["text_handler"].document
         
-        # First: Save to output directory (original behavior)
-        self.bridge.save_final_doc(pymu_doc)
+        # self.bridge.save_final_doc(pymu_doc)
         
-        # Second: Ask user where to save a copy
         self.save_file_manager.save_file()
     
     @Slot()

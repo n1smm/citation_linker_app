@@ -419,7 +419,7 @@ class DocConfig(QWidget):
             return
 
         try:
-            with open(self.config_path, 'r') as f:
+            with open(self.config_path, 'r', encoding='utf-8') as f:
                 for line in f:
                     key, value = self.parse_config_line(line)
                     if not key:
@@ -507,7 +507,7 @@ class DocConfig(QWidget):
             lines.append(f"ALTERNATIVE_BIB={self.alternative_bib_check.isChecked()}")
 
             # Write to file
-            with open(self.config_path, 'w') as f:
+            with open(self.config_path, 'w', encoding='utf-8') as f:
                 f.write("\n".join(lines))
 
             QMessageBox.information(self, "Success", f"Config saved to: {self.config_path}")
