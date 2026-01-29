@@ -1,6 +1,6 @@
 [project]
 name = "citiaton-linker-complete"
-version = "0.1.0"
+version = "0.0.5"
 description = "the full citation linekr app"
 authors = [{name = "n1smm", email = "nomail@please.com"}]
 requires-python = ">=3.12"

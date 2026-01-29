@@ -1,6 +1,6 @@
 [project]
 name = "qtapp"
-version = "0.1.0"
+version = "0.0.5"
 description = "Qt app for citation linker"
 authors = [{name = "n1smm", email = "nomail@please.com"}]
 requires-python = ">=3.12"
@@ -8,6 +8,7 @@ readme = "README.md"
 dependencies = [
     "pymupdf>=1.26.7",
     "pyside6>=6.10.1",
+	"citation-linker>=0.1.0",
 ]
 
 [build-system]
