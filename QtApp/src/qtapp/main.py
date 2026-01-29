@@ -5,7 +5,7 @@ Provides the user interface for linking citations in PDF documents to their bibl
 import  sys
 import  os
 import  time
-from    PySide6.QtCore                  import  Slot
+from    PySide6.QtCore                  import  Qt, Slot
 from    PySide6.QtWidgets               import  (QApplication,
                                                  QMessageBox,
                                                  QPushButton,
@@ -13,7 +13,9 @@ from    PySide6.QtWidgets               import  (QApplication,
                                                  QWidget,
                                                  QHBoxLayout,
                                                  QVBoxLayout,
-                                                 QLabel)
+                                                 QStackedLayout,
+                                                 QLabel,
+                                                 QSizePolicy)
 from    PySide6.QtPdf                   import  QPdfDocument
 from    qtapp.components.PdfViewer      import  PdfViewer
 from    qtapp.components.FileManager    import  FileManager
@@ -47,8 +49,14 @@ class CitationLinkerApp(QMainWindow):
 
         self.layout = QVBoxLayout(container)
         self.horizontal_bar = QHBoxLayout()
-        self.input_layout = QHBoxLayout()
-        self.output_layout = QHBoxLayout()
+
+        self.input_container = QWidget()
+        self.output_container = QWidget()
+        self.input_layout = QHBoxLayout(self.input_container)
+        self.output_layout = QHBoxLayout(self.output_container)
+        self.stacked_layout = QStackedLayout()
+
+        self.layout.setStretchFactor(self.horizontal_bar, 0)
         self.setCentralWidget(container)
 
 
@@ -111,6 +119,8 @@ class CitationLinkerApp(QMainWindow):
         self.layout.addWidget(self.upload_file_manager)
         self.layout.addWidget(self.filenameLabel)
         self.horizontal_bar.setContentsMargins(50, 2, 50, 2)
+        self.input_layout.setContentsMargins(0, 0, 0, 0)
+        self.output_layout.setContentsMargins(0, 0, 0, 0)
         self.horizontal_bar.setSpacing(20)
         self.horizontal_bar.addStretch()
         self.horizontal_bar.addWidget(self.configToggle)
@@ -120,10 +130,20 @@ class CitationLinkerApp(QMainWindow):
         self.horizontal_bar.addStretch()
         self.horizontal_bar.addWidget(self.exitBtn)
 
-        self.layout.addLayout(self.horizontal_bar)
-        self.layout.addLayout(self.input_layout)
-        self.layout.addLayout(self.output_layout)
-        self.layout.addWidget(self.document_config)
+        self.stacked_layout.addWidget(self.input_container) # 0
+        self.stacked_layout.addWidget(self.output_container) # 1
+        self.stacked_layout.addWidget(self.document_config) # 2
+
+        self.input_idx = self.stacked_layout.indexOf(self.input_container)
+        self.output_idx = self.stacked_layout.indexOf(self.output_container)
+        self.config_idx = self.stacked_layout.indexOf(self.document_config)
+
+
+        self.layout.addLayout(self.horizontal_bar, stretch=0)
+        self.layout.addLayout(self.stacked_layout, stretch=1)
+        # self.layout.addLayout(self.input_layout, stretch=1)
+        # self.layout.addLayout(self.output_layout, stretch=1)
+        # self.layout.addWidget(self.document_config, stretch=1)
 
 
         self.filenameLabel.hide()
@@ -137,13 +157,23 @@ class CitationLinkerApp(QMainWindow):
 
     def refresh_layout(self):
         """Force UI refresh by hiding and showing the main window."""
-        self.hide()
-        self.show()
+
+        self.layout.invalidate()
+        self.layout.activate()
+        self.centralWidget().updateGeometry()
+        
         QApplication.processEvents()
+        # self.hide()
+        # self.show()
+        # QApplication.processEvents()
     
     def init_viewers_ui(self):
         """Initialize and display all viewer widgets in their respective layouts."""
         for env in self.view_environments:
+            # Set size policy for viewers to expand and fill space
+            env["viewer"].setSizePolicy(QSizePolicy.Policy.Expanding,
+                                        QSizePolicy.Policy.Expanding)
+            
             if env["type"] == "input_doc":
                 self.input_layout.addWidget(env["viewer"])
                 self.document_config.list_widget_changed.emit("ALL", None)
@@ -207,6 +237,7 @@ class CitationLinkerApp(QMainWindow):
                 env["viewer"].show()
                 self.document_config.output_file_path = output_file_path
                 self.set_alt_viewer(env)
+            self.stacked_layout.setCurrentIndex(self.output_idx)
             self.document_config.hide()
             self.is_input_view = False
             self.configToggle.setChecked(False)
@@ -312,6 +343,7 @@ class CitationLinkerApp(QMainWindow):
                 else:
                     env["viewer"].hide()
             self.is_input_view = True
+            self.stacked_layout.setCurrentIndex(self.input_idx)
         else:
             self.switchViewers.setText("input document")
             for env in self.view_environments:
@@ -320,6 +352,7 @@ class CitationLinkerApp(QMainWindow):
                 else:
                     env["viewer"].show()
             self.is_input_view = False
+            self.stacked_layout.setCurrentIndex(self.output_idx)
         
         self.refresh_layout()
 
@@ -336,19 +369,23 @@ class CitationLinkerApp(QMainWindow):
             for env in self.view_environments:
                 env["viewer"].hide()
             update_data = self.text_handler.get_config_data()
+            self.stacked_layout.setCurrentIndex(self.config_idx)
             self.document_config.set_data_from_view(update_data)
             self.document_config.show()
 
         elif not checked and self.is_input_view:
             self.configToggle.setText("config")
             self.document_config.hide()
+            self.stacked_layout.setCurrentIndex(self.input_idx)
             self.initial_viewer.show()
         else: 
             self.configToggle.setText("config")
             self.document_config.hide()
+            self.stacked_layout.setCurrentIndex(self.output_idx)
             for env in self.view_environments:
                 if env["type"] != "input_doc":
                     env["viewer"].show()
+
         
         self.refresh_layout()
 
@@ -398,9 +435,11 @@ class CitationLinkerApp(QMainWindow):
 
 def main():
     """Initialize and run the Citation Linker application."""
+    QApplication.setHighDpiScaleFactorRoundingPolicy(Qt.HighDpiScaleFactorRoundingPolicy.PassThrough)
     app = QApplication()
+    app.setAttribute(Qt.AA_UseHighDpiPixmaps)
     citationLinkerApp = CitationLinkerApp()
-    citationLinkerApp.show()
+    citationLinkerApp.showMaximized()  # Start maximized
 
     sys.exit(app.exec())
 

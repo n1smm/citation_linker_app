@@ -22,6 +22,7 @@ from    PySide6.QtWidgets               import  (QWidget,
                                                  QComboBox,
                                                  QListWidget,
                                                  QGroupBox,
+                                                 QSizePolicy,
                                                  QScrollArea,)
 
 from    qtapp.components.FileManager    import  FileManager
@@ -49,6 +50,10 @@ class DocConfig(QWidget):
     def __init__(self, parent=None, bridge=None):
         """Initialize configuration UI with all fields and load existing config."""
         super().__init__(parent)
+        self.setSizePolicy(
+                QSizePolicy.Policy.Preferred,
+                QSizePolicy.Policy.Expanding
+                )
 
         ### member declarations
         self.parent = parent
@@ -91,6 +96,7 @@ class DocConfig(QWidget):
         # Scroll area for config fields
         scroll = QScrollArea()
         scroll.setWidgetResizable(True)
+        scroll.setMinimumHeight(400)
         scroll_widget = QWidget()
         scroll_layout = QVBoxLayout(scroll_widget)
 
@@ -249,7 +255,7 @@ class DocConfig(QWidget):
         scroll_layout.addWidget(bool_group)
 
         scroll.setWidget(scroll_widget)
-        main_layout.addWidget(scroll)
+        main_layout.addWidget(scroll, stretch=1)
 
         # Bottom buttons
         button_layout = QHBoxLayout()
@@ -266,7 +272,7 @@ class DocConfig(QWidget):
         new_btn.clicked.connect(self.clear_all_fields)
         button_layout.addWidget(new_btn)
 
-        main_layout.addLayout(button_layout)
+        main_layout.addLayout(button_layout, stretch=1)
 
     def add_list_field(self, layout, row, field_name, label_text, help_text):
         """Helper to add a list field with add/remove buttons"""
@@ -274,7 +280,8 @@ class DocConfig(QWidget):
 
         list_layout = QVBoxLayout()
         list_widget = QListWidget()
-        list_widget.setMaximumHeight(100)
+        list_widget.setMinimumHeight(80)
+        list_widget.setMaximumHeight(200)
         list_layout.addWidget(list_widget)
 
         btn_layout = QHBoxLayout()

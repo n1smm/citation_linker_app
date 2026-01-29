@@ -7,6 +7,7 @@ from    PySide6.QtWidgets               import  (QWidget,
                                                 QPushButton,
                                                 QHBoxLayout,
                                                 QRubberBand,
+                                                QSizePolicy,
                                                 QVBoxLayout)
 from    PySide6.QtPdf                   import  QPdfDocument
 from    PySide6.QtPdfWidgets            import  QPdfView
@@ -46,6 +47,11 @@ class PdfViewer(QWidget):
         self.layout = QVBoxLayout() #main layout
         self.horizontal_bar = QHBoxLayout()
         self.setLayout(self.layout)
+        self.setSizePolicy(
+                QSizePolicy.Policy.Expanding,
+                QSizePolicy.Policy.Expanding
+                )
+
 
         self.navigator = PdfNavigator(self)
         self.zoom_selector = ZoomSelector(self)
