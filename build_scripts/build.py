@@ -18,6 +18,53 @@ def clean_build():
             print(f"Cleaning {d}/...")
             shutil.rmtree(d)
 
+def prepare_icons():
+    """Prepare icon files for the build"""
+    # macOS: Create .icns from .png if needed
+    if sys.platform == 'darwin':
+        icns_file = Path('icon.icns')
+        png_file = Path('icon.png')
+        
+        if not icns_file.exists() and png_file.exists():
+            print("Creating icon.icns from icon.png...")
+            try:
+                # Create temporary iconset directory
+                iconset_dir = Path('icon.iconset')
+                iconset_dir.mkdir(exist_ok=True)
+                
+                # Generate different icon sizes using sips (macOS built-in tool)
+                sizes = [16, 32, 64, 128, 256, 512, 1024]
+                for size in sizes:
+                    subprocess.run([
+                        'sips', '-z', str(size), str(size),
+                        str(png_file),
+                        '--out', str(iconset_dir / f'icon_{size}x{size}.png')
+                    ], check=False, capture_output=True)
+                    
+                    # Also create @2x versions for retina
+                    if size <= 512:
+                        subprocess.run([
+                            'sips', '-z', str(size*2), str(size*2),
+                            str(png_file),
+                            '--out', str(iconset_dir / f'icon_{size}x{size}@2x.png')
+                        ], check=False, capture_output=True)
+                
+                # Convert iconset to icns
+                subprocess.run([
+                    'iconutil', '-c', 'icns', str(iconset_dir)
+                ], check=False)
+                
+                # Clean up temporary iconset
+                shutil.rmtree(iconset_dir)
+                
+                if icns_file.exists():
+                    print("[OK] Created icon.icns")
+                else:
+                    print("[WARNING] Could not create icon.icns, will build without icon")
+            except Exception as e:
+                print(f"[WARNING] Icon creation failed: {e}")
+                print("Building without macOS icon...")
+
 def install_dependencies():
     """Ensure all dependencies are installed"""
     print("Installing dependencies...")
@@ -37,7 +84,7 @@ def build_executable():
         '--clean',  # Clean PyInstaller cache
     ], check=True)
 
-    print("\n✓ Build complete!")
+    print("\n[OK] Build complete!")
     print(f"Executable location: dist/")
 
     if sys.platform == 'darwin':
@@ -53,6 +100,7 @@ def main():
     os.chdir(script_dir)
 
     clean_build()
+    prepare_icons()
     install_dependencies()
     build_executable()
 
