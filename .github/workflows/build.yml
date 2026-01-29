@@ -1,5 +1,8 @@
 name: Build Executables
 
+permissions:
+  contents: write  # Required for creating releases
+
 on:
   push:
     tags:
@@ -53,7 +56,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: macos-app
-          path: build_scripts/dist/*.app
+          path: build_scripts/dist/Citation Linker.app/
 
   build-linux:
     runs-on: ubuntu-latest  # Changed from ubuntu-20.04 for better availability
@@ -85,15 +88,30 @@ jobs:
     steps:
       - name: Download all artifacts
         uses: actions/download-artifact@v4
+      
+      - name: List downloaded artifacts
+        run: |
+          echo "Downloaded artifacts:"
+          ls -R
+      
+      - name: Package macOS app
+        run: |
+          if [ -d "macos-app" ]; then
+            cd macos-app
+            zip -r ../Citation-Linker-macOS.zip .
+            cd ..
+          fi
+        
       - name: Create Release
         uses: softprops/action-gh-release@v1
         with:
           tag_name: ${{ github.event.inputs.release_tag || github.ref_name }}
           name: Release ${{ github.event.inputs.release_tag || github.ref_name }}
           draft: ${{ github.event_name == 'workflow_dispatch' }}
+          fail_on_unmatched_files: false
           files: |
-            windows-exe/*
-            macos-app/*
+            windows-exe/*.exe
             linux-bin/*
+            Citation-Linker-macOS.zip
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
