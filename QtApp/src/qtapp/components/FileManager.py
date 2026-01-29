@@ -1,3 +1,6 @@
+"""
+File selection widget for opening and saving PDF files.
+"""
 from    pathlib                     import  Path
 from    PySide6.QtCore              import  Qt, QFile, Slot, Signal
 from    PySide6.QtWidgets           import  (QWidget,
@@ -5,17 +8,25 @@ from    PySide6.QtWidgets           import  (QWidget,
                                              QPushButton,
                                              QHBoxLayout,
                                              QLabel,
-                                             QMessageBox,
-                                             )
+                                             QMessageBox,)
 
 
 class FileManager(QWidget):
+        """
+        File upload/save manager with dialog handling.
+        
+        Parent: mainWindow
+        Children: QPushButton, QFileDialog
+        
+        Manages file selection for both upload (open) and save operations.
+        Emits signals when file selection is complete.
+        """
 
         ### declared signals
         process_finished = Signal()
         file_path_extracted = Signal()
 
-        def __init__(self, upload, parent=None):
+        def __init__(self, upload, pdf, parent=None):
             super().__init__(parent)
             print("initig the file manager")
 
@@ -30,14 +41,19 @@ class FileManager(QWidget):
             self.dialog = QFileDialog()
             self.file_path = ""
             self.upload = upload
+            self.pdf = pdf
 
             if upload:
-                self.file_button = QPushButton("upload file")
+                self.file_button = QPushButton("upload file/path")
             else:
                 self.file_button = QPushButton("save file")
-
-
-            ### initializations
+                self.file_button.hide()
+            if pdf:
+                self.msg = "open PDF file"
+                self.search_params = "PDF Files (*.pdf);;All Files (*)"
+            else:
+                self.msg = "open the path/file"
+                self.search_params = "All Files (*)"
 
 
             ### options
@@ -63,9 +79,9 @@ class FileManager(QWidget):
         def open_file(self):
             file_path, _ = self.dialog.getOpenFileName(
                     self,
-                    "open PDF file",
+                    self.msg,
                     "",
-                    "PDF Files (*.pdf);;All Files (*)"
+                    self.search_params
                     )
             if file_path:
                 print("upload path: ", file_path)
@@ -86,7 +102,14 @@ class FileManager(QWidget):
 
         def get_file_path(self):
             if self.file_path:
-                if Path(self.file_path).exists():
+                # For upload, check if file exists. For save, just return the path
+                if self.upload:
+                    if Path(self.file_path).exists():
+                        send_path = self.file_path
+                        self.file_path_extracted.emit()
+                        return send_path
+                else:
+                    # For saving, don't check existence (we're creating a new file)
                     send_path = self.file_path
                     self.file_path_extracted.emit()
                     return send_path
@@ -109,6 +132,11 @@ class FileManager(QWidget):
         # get current status : upload/save
         def get_manager_status(self):
             return self.upload
+
+        def reset_manager(self, upload=True, pdf=True):
+            self.file_path = ""
+            self.upload = upload
+            self.pdf = pdf
 
 
         # resets the manager
