@@ -7,23 +7,23 @@ if the program is running already if you don't see it.
 
 ## general app flow
 <br>
-- open the app - select a document you want to link
-- in config window you can clear current config or load previous or manually adjust the paramenters
-- in document viewer you can:
-    + use space to selecte the start and end of the articles you want to link (end is after bibliography)
-    + mouse actions:
-        * left click and drag - creates a selection that you can add to bibliography delimiters or special cases (check config for more info)
-        * right click - delete links and annotations
-- after you selected all the articles and edited config click start linking button
-- next step it will open document viewer in split view:
-    + left is used  to check the text
-    + right will snap to the bibliography of the article you are viewing on the left
-- in split view you can add or remove links:
-    + right click - delete link or annotation
-    + left click and drag - create a selection and then:
-        * in the left viewer click add link
-        * in the right, make a new selection and click add destination
-        * this will link the citatio to bibliography
+- open the app - select a document you want to link <br>
+- in config window you can clear current config or load previous or manually adjust the paramenters <br>
+- in document viewer you can: <br>
+    + use space to selecte the start and end of the articles you want to link (end is after bibliography) <br>
+    + mouse actions: <br>
+        * left click and drag - creates a selection that you can add to bibliography delimiters or special cases (check config for more info) <br>
+        * right click - delete links and annotations <br>
+- after you selected all the articles and edited config click start linking button <br>
+- next step it will open document viewer in split view: <br>
+    + left is used  to check the text <br>
+    + right will snap to the bibliography of the article you are viewing on the left <br>
+- in split view you can add or remove links: <br>
+    + right click - delete link or annotation <br>
+    + left click and drag - create a selection and then: <br>
+        * in the left viewer click add link <br>
+        * in the right, make a new selection and click add destination <br>
+        * this will link the citatio to bibliography <br>
     
 ## Citation Style
 The script works with **Chicago author-date style** (parenthetical citations) and expects citations primarily within parentheses in the format: `(Author Year)` or `(Author Year: pages)`.
