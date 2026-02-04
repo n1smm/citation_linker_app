@@ -114,6 +114,10 @@ When enabled:
 4. **One article at a time**: Designed for single articles or documents with one unified bibliography
 5. **Language-agnostic surnames**: Works with any language that uses capital letters for surnames
 
+## notice
+the script was tested with the citation style used in the publications of *Studia Litteraria*: 
+[link](https://omp.zrc-sazu.si/zalozba/catalog/series/A32)
+
 ## Best Practices
 
 - Ensure bibliography entries follow the required format: `Surname, Name, Year` (comma-separated)
