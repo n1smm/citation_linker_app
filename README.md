@@ -127,10 +127,10 @@ When enabled:
 
 ## General Limitations
 
-1. **Single bibliography location**: The script currently works only with documents that have all references in one location (typically at the end)
+1. **Single bibliography location**: Only works if bibliography is at the end of the article
 2. **Chicago author-date style only**: Other citation styles (APA, MLA, etc.) are not supported
 3. **PDF format required**: Only works with PDF documents
-4. **One article at a time**: Designed for single articles or documents with one unified bibliography
+4. **One article at a time**: Processes only one document at a time
 5. **Language-agnostic surnames**: Works with any language that uses capital letters for surnames
 
 ## notice
