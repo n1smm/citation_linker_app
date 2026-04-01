@@ -24,9 +24,10 @@ class TextHandler(QObject):
     - Year extraction from citations
     - Configuration data management (delimiters, special cases, articles)
     """
-    def _del__(self):
+    def __del__(self):
         """Clean up document resources."""
-        if self.document:
+        # Safe cleanup: check instance type and is_closed to avoid errors
+        if isinstance(self.document, pymupdf.Document) and not self.document.is_closed:
             try:
                 self.document.close()
             except Exception:
@@ -62,7 +63,9 @@ class TextHandler(QObject):
 
     def close_document(self):
         """Close the currently open PyMuPDF document."""
-        if self.document:
+        # Check if document is a PyMuPDF Document object and not already closed
+        # Using is_closed is safe and doesn't trigger __len__ which would raise on closed docs
+        if isinstance(self.document, pymupdf.Document) and not self.document.is_closed:
             self.document.close()
         else:
             print("no document open")
@@ -173,7 +176,7 @@ class TextHandler(QObject):
         if action == "delete":
             self.page.delete_annot(annot)
             # annot.delete()
-            print(f"Annotation {annot_idx} deleted.")
+            # print(f"Annotation {annot_idx} deleted.")
         elif action == "toggle_type":
             if annot.type[1] == "Underline":
                 annot.set_info(type=pymupdf.PDF_ANNOT_HIGHLIGHT)

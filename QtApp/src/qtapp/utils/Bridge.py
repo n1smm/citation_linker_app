@@ -8,7 +8,8 @@ import  sys
 import  subprocess
 import  pymupdf
 import  shutil
-import  time
+# import  time
+import  json
 from    pathlib                         import  Path
 from    PySide6.QtCore                  import  QObject, Signal, Slot
 
@@ -25,7 +26,7 @@ class Bridge(QObject):
     """
     Interface between Qt UI and citation-linker CLI.
     
-    Parent: QObject
+    Parent: CitationLinkerApp(mainWindow)
     Children: None
     
     Handles:
@@ -51,6 +52,7 @@ class Bridge(QObject):
         self.output_dir= ""
         self.input_file_path = ""
         self.output_file_path = ""
+        self.log_messages = []
         self.user_shell = self.get_user_shell()
         self.config_path = self.get_config_path()
 
@@ -180,6 +182,9 @@ class Bridge(QObject):
         Returns:
             tuple: (success: bool, output_file_path: str)
         """
+
+        from    citation_linker.configLoad      import  config
+        from    citation_linker.appLogger       import  get_logs, reset_log_buffer, get_logger
         self.parent.document_config.save_config()
         self.get_input_file_path()
         base, ext = os.path.splitext(os.path.basename(self.input_file_path))
@@ -187,6 +192,16 @@ class Bridge(QObject):
         shutil.copy(self.input_file_path, os.path.join(self.input_dir, base+ext))
         output_file_base = base + "_linked" + ext
         output_file_path = os.path.join(self.output_dir, output_file_base)
+        
+        # Set UI mode BEFORE calling get_logger() to ensure proper handler configuration
+        config["UI"] = ["True"]
+        
+        # Force logger reconfiguration for UI mode by calling get_logger()
+        # This will detect the UI mode change and switch to StringIO handler
+        get_logger()
+        
+        # Reset the log buffer to ensure it's clean for this run
+        reset_log_buffer()
 
         try:
             # Call the appropriate main function directly
@@ -197,11 +212,20 @@ class Bridge(QObject):
                 return_code = multi_file_main()
             else:
                 return_code = multi_article_main()
+
+            self.log_messages.clear()
+            log_output = get_logs()
+            self.log_messages = self.parse_log_output(log_output)
+            if self.log_messages:
+                print(f"Captured {len(self.log_messages)} log messages")
+            else:
+                print("Warning: No log messages captured")
         except Exception as e:
             print(f"Error during linking process: {e}")
             import traceback
             traceback.print_exc()
             return_code = 1  # Failure
+            log_messages = []
             
         self.output_file_path = output_file_path
         print("output file path: ", output_file_path)
@@ -209,6 +233,19 @@ class Bridge(QObject):
         success = return_code == 0 and os.path.exists(output_file_path)
         self.linking_finished.emit(success, output_file_path)
         return (success, output_file_path)
+
+
+    def parse_log_output(self, log_output):
+        """ parse json to dicts. """
+        messages = []
+        for line in log_output.strip().split("\n"):
+            if line:
+                try:
+                    messages.append(json.loads(line))
+                except json.JSONDecodeError:
+                    pass
+
+        return messages
 
 
     def delete_files_in_dir(self, dir):

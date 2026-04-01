@@ -106,6 +106,7 @@ class CitationLinkerApp(QMainWindow):
         self.switchViewers.setCheckable(True)
 
 
+        # connected signals
         self.upload_file_manager.process_finished.connect(self.file_upload)
         self.configToggle.toggled.connect(self.toggle_config)
         self.switchViewers.toggled.connect(self.switch_views)
@@ -116,6 +117,7 @@ class CitationLinkerApp(QMainWindow):
         self.save_file_manager.process_finished.connect(self.perform_save)
 
 
+        # layouts
         self.layout.addWidget(self.upload_file_manager)
         self.layout.addWidget(self.filenameLabel)
         self.horizontal_bar.setContentsMargins(50, 2, 50, 2)
@@ -270,7 +272,7 @@ class CitationLinkerApp(QMainWindow):
             if env["viewer"] != viewer:
                 env["viewer"].article_changed.connect(viewer.on_article_changed)
         
-        print("start_page: ", start_page)
+        # print("start_page: ", start_page)
         
 
     def file_upload(self):
@@ -299,7 +301,7 @@ class CitationLinkerApp(QMainWindow):
     def start_linking_process(self):
         """Initiate the citation linking process after user confirmation."""
         update_data = self.text_handler.get_config_data()
-        print(update_data)
+        # print(update_data)
         self.document_config.set_data_from_view(update_data)
         reply = QMessageBox.information(self, "Are you sure?",
                                 ("Are you sure?,\n"

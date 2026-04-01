@@ -139,8 +139,8 @@ class   ExtendedView(QPdfView):
                 for link in self.current_links:
                     screen_rect = self.text_selector.page_to_viewport_coords(link["from"])
                     if screen_rect.contains(event.pos()):
-                        print("INTERSECTIOON LINK Left click")
-                        print("to filed", link["to_dpi"])
+                        # print("INTERSECTIOON LINK Left click")
+                        # print("to filed", link["to_dpi"])
                         self.navigator.jump_to(link["page"], link["to_dpi"])
 
         elif event.button() == Qt.RightButton:
@@ -150,7 +150,7 @@ class   ExtendedView(QPdfView):
                 for idx, annot in enumerate(self.current_annotations):
                     screen_rect = self.text_selector.page_to_viewport_coords(annot["rect"])
                     if screen_rect.contains(event.pos()):
-                        print ("INTERSECTION")
+                        # print ("INTERSECTION")
                         popup_pos = self.viewport().mapToGlobal(event.pos())
                         self.popup.show_at(popup_pos, alt=True)
                         self.curr_annot_type = "annot"
@@ -160,8 +160,8 @@ class   ExtendedView(QPdfView):
                 for idx, link in enumerate(self.current_links):
                     screen_rect = self.text_selector.page_to_viewport_coords(link["from"])
                     if screen_rect.contains(event.pos()):
-                        print("INTERSECTION LINK")
-                        print("to field", link["to_dpi"])
+                        # print("INTERSECTION LINK")
+                        # print("to field", link["to_dpi"])
                         popup_pos = self.viewport().mapToGlobal(event.pos())
                         self.popup.show_at(popup_pos, alt=True)
                         self.curr_annot_idx = idx
@@ -242,7 +242,7 @@ class   ExtendedView(QPdfView):
         for elem in self.text_handler.article_cache[:]:
             for pos, page in elem.items():
                 if curr_page == page:
-                    print(f"you are on a {curr_page} which a part of {elem}")
+                    # print(f"you are on a {curr_page} which a part of {elem}")
                     self.text_handler.article_cache.remove(elem)
                     self.last_page = None
                     self.curr_page_rect = None
@@ -256,10 +256,10 @@ class   ExtendedView(QPdfView):
 
         if self.first_page is None:
             self.first_page = curr_page
-            print(f"First page selected: {curr_page}")
+            # print(f"First page selected: {curr_page}")
 
         elif curr_page == self.first_page:
-            print(f"Clearing selection for page {curr_page}")
+            # print(f"Clearing selection for page {curr_page}")
             if self.curr_page_rect:
                 self.viewport().update(self.curr_page_rect)
             self.first_page = None
@@ -269,7 +269,7 @@ class   ExtendedView(QPdfView):
         elif curr_page > self.first_page:
             self.last_page = curr_page
             article_info = {"first": self.first_page, "last": self.last_page}
-            print(f"Article saved: pages {self.first_page} to {self.last_page}")
+            # print(f"Article saved: pages {self.first_page} to {self.last_page}")
             self.text_handler.article_cache.append(article_info)
             self.first_page = None
             self.last_page = None
@@ -300,7 +300,7 @@ class   ExtendedView(QPdfView):
     def on_annot_event(self, action):
         """Execute action on selected annotation or link."""
         if  self.curr_annot_type == "annot":
-            print("action:", action)
+            # print("action:", action)
             new_rect = None
             self.text_handler.annot_action(
                     self.curr_annot_idx,
@@ -348,7 +348,7 @@ class   ExtendedView(QPdfView):
     def handle_link(self):
         """Create link from selected region."""
         curr_text = self.text_handler.selected_text
-        print("curr_text: ", curr_text)
+        # print("curr_text: ", curr_text)
         rect = self.text_selector.normalize_pixel_to_page(self.selection_rect)
         rect_info = {
                 "rect" : rect,
@@ -369,7 +369,7 @@ class   ExtendedView(QPdfView):
     def handle_destination(self):
         """Set destination for previously created link."""
         curr_text = self.text_handler.selected_text
-        print("curr_text: ", curr_text)
+        # print("curr_text: ", curr_text)
         zoom_factor = self.effectiveZoomFactor()
         rect_info = {
                 "rect" : self.selection_rect,
@@ -384,8 +384,8 @@ class   ExtendedView(QPdfView):
         if self.selection_rect:
             self.viewport().update(self.selection_rect)
         if self.prev_selection:
-            print("prev rect: ", self.prev_selection, " prev viewport: ", self.prev_viewport)
-            print(f"[handle_destination] Updating prev_viewport with rect {self.prev_selection}")
+            # print("prev rect: ", self.prev_selection, " prev viewport: ", self.prev_viewport)
+            # print(f"[handle_destination] Updating prev_viewport with rect {self.prev_selection}")
             self.prev_viewport.update(self.prev_selection)
             self.prev_viewport.update()  # Force full viewport update
             self.prev_selection = None

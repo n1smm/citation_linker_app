@@ -30,7 +30,7 @@ class TextSelector(QObject):
         super().__init__(parent) 
         ### member declarations
         self.parent = parent
-        print("selector: ", parent)
+        # print("selector: ", parent)
         self.selecting = False
         self.origin = QPoint()
         self.rubberBand = QRubberBand(QRubberBand.Rectangle, parent)
