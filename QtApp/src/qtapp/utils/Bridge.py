@@ -218,6 +218,7 @@ class Bridge(QObject):
             self.log_messages = self.parse_log_output(log_output)
             if self.log_messages:
                 print(f"Captured {len(self.log_messages)} log messages")
+                print("first log: ", self.log_messages[0])
             else:
                 print("Warning: No log messages captured")
         except Exception as e:

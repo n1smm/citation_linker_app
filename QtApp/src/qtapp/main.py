@@ -22,6 +22,7 @@ from    qtapp.components.FileManager    import  FileManager
 from    qtapp.utils.TextHandler         import  TextHandler
 from    qtapp.components.DocConfig      import  DocConfig
 from    qtapp.utils.Bridge              import  Bridge
+from    qtapp.components.DebugOutput    import  DebugOutput
 
 class CitationLinkerApp(QMainWindow):
     """
@@ -63,6 +64,10 @@ class CitationLinkerApp(QMainWindow):
         self.view_environments = []
         self.is_input_view = True
         self.bridge = Bridge(self)
+        self.debug_output = DebugOutput(parent=self)
+        self.debug_output.setWindowFlags(Qt.Window)
+        self.debug_output.setWindowTitle("Debug Output")
+        self.debug_output.resize(800, 600)
         self.document_config = DocConfig(self, self.bridge)
         self.upload_file_manager = FileManager(upload=True, pdf=True, parent=self)
         self.save_file_manager = FileManager(upload=False, pdf=True, parent=self)
@@ -155,6 +160,7 @@ class CitationLinkerApp(QMainWindow):
         self.saveFile.hide()
         self.exitBtn.hide()
         self.document_config.hide()
+
 
 
     def refresh_layout(self):

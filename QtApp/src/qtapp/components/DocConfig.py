@@ -272,6 +272,10 @@ class DocConfig(QWidget):
         new_btn.clicked.connect(self.clear_all_fields)
         button_layout.addWidget(new_btn)
 
+        debug_btn = QPushButton("Debug Output")
+        debug_btn.clicked.connect(self.show_debug_output)
+        button_layout.addWidget(debug_btn)
+
         main_layout.addLayout(button_layout, stretch=1)
 
     def add_list_field(self, layout, row, field_name, label_text, help_text):
@@ -538,6 +542,16 @@ class DocConfig(QWidget):
         self.parent.clear_text_handlers()
 
         QMessageBox.information(self, "Cleared", "All fields cleared. Configure and save as needed.")
+
+    def show_debug_output(self):
+        """Toggle the debug output window visibility."""
+        if self.parent and hasattr(self.parent, 'debug_output'):
+            if self.parent.debug_output.isVisible():
+                self.parent.debug_output.close()
+            else:
+                self.parent.debug_output.show()
+                self.parent.debug_output.raise_()
+                self.parent.debug_output.activateWindow()
 
     def article_cache_to_list(self, data):
         """Convert zero-based article cache to one-based string list for display."""
