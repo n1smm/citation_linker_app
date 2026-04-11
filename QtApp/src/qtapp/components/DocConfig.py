@@ -46,6 +46,19 @@ class DocConfig(QWidget):
     Provides help dialogs for each configuration field.
     """
     list_widget_changed = Signal(str, QListWidget)
+    REQUIRED_CONFIG_KEYS = {
+        "DEBUG",
+        "SPECIAL_CASE",
+        "BIBLIOGRAPHY_DELIMITER",
+        "ANNOT_TYPE",
+        "COLOR",
+        "OFFSET",
+        "ARTICLE_BREAKS",
+        "SOFT_YEAR",
+        "DEEP_SEARCH",
+        "SEARCH_EXCLUDE",
+        "ALTERNATIVE_BIB",
+    }
 
     def __init__(self, parent=None, bridge=None):
         """Initialize configuration UI with all fields and load existing config."""
@@ -261,16 +274,20 @@ class DocConfig(QWidget):
         button_layout = QHBoxLayout()
 
         load_btn = QPushButton("Load Config")
-        load_btn.clicked.connect(self.load_config)
+        load_btn.clicked.connect(self.load_config_dialog)
         button_layout.addWidget(load_btn)
 
         save_btn = QPushButton("Save Config")
-        save_btn.clicked.connect(self.save_config)
+        save_btn.clicked.connect(self.save_config_as)
         button_layout.addWidget(save_btn)
 
         new_btn = QPushButton("New Config")
         new_btn.clicked.connect(self.clear_all_fields)
         button_layout.addWidget(new_btn)
+
+        debug_btn = QPushButton("Debug Output")
+        debug_btn.clicked.connect(self.show_debug_output)
+        button_layout.addWidget(debug_btn)
 
         main_layout.addLayout(button_layout, stretch=1)
 
@@ -394,6 +411,62 @@ class DocConfig(QWidget):
         """Handle configuration path change signal."""
         self.config_path = path
 
+    def get_config_dialog_start_dir(self):
+        """Get the preferred directory for config file dialogs."""
+        if self.config_path:
+            config_dir = Path(self.config_path).expanduser().resolve().parent
+            if config_dir.exists():
+                return str(config_dir)
+        return str(Path.home())
+
+    def parse_config_file(self, config_path):
+        """Parse full config file into key/value mapping."""
+        config_values = {}
+        with open(config_path, 'r', encoding='utf-8') as f:
+            for line in f:
+                key, value = self.parse_config_line(line)
+                if key:
+                    config_values[key] = value
+        return config_values
+
+    def validate_config_values(self, config_values):
+        """Validate required config structure and key value formats."""
+        missing_keys = sorted(self.REQUIRED_CONFIG_KEYS - set(config_values.keys()))
+        if missing_keys:
+            return False, f"Missing required keys: {', '.join(missing_keys)}"
+
+        bool_keys = ("DEBUG", "SOFT_YEAR", "DEEP_SEARCH", "ALTERNATIVE_BIB")
+        for key in bool_keys:
+            value = config_values.get(key, "").strip().lower()
+            if value not in ("true", "false"):
+                return False, f"Invalid {key}: expected True or False."
+
+        annot_type = config_values.get("ANNOT_TYPE", "").strip().lower()
+        if annot_type not in ("underline", "highlight"):
+            return False, "Invalid ANNOT_TYPE: expected underline or highlight."
+
+        valid_colors = {
+            self.color_combo.itemText(i).strip().lower()
+            for i in range(self.color_combo.count())
+        }
+        color = config_values.get("COLOR", "").strip().lower()
+        if color and color not in valid_colors:
+            return False, f"Invalid COLOR: expected one of {', '.join(sorted(valid_colors))}."
+
+        offset = config_values.get("OFFSET", "").strip()
+        if offset and not re.fullmatch(r"[+-]?\d+", offset):
+            return False, "Invalid OFFSET: expected empty value or signed integer (e.g., +2, -5)."
+
+        delimiter_values = self.parse_list_value(config_values.get("BIBLIOGRAPHY_DELIMITER", ""))
+        if not delimiter_values:
+            return False, "BIBLIOGRAPHY_DELIMITER must contain at least one value."
+
+        for break_item in self.parse_list_value(config_values.get("ARTICLE_BREAKS", "")):
+            if not re.fullmatch(r"\d+:\d+", break_item):
+                return False, f"Invalid ARTICLE_BREAKS entry: {break_item}. Expected format N:N."
+
+        return True, ""
+
     def parse_config_line(self, line):
         """Parse a single line from configuration file."""
         line = line.strip()
@@ -418,6 +491,60 @@ class DocConfig(QWidget):
         matches = re.findall(r'"([^"]*)"', value)
         return matches
 
+    def apply_loaded_config(self, config_values):
+        """Apply parsed config values to UI fields."""
+        self.debug_check.setChecked(config_values["DEBUG"].lower() == "true")
+
+        self.special_case_list.clear()
+        for item in self.parse_list_value(config_values["SPECIAL_CASE"]):
+            self.special_case_list.addItem(item)
+
+        self.delimiter_list.clear()
+        for item in self.parse_list_value(config_values["BIBLIOGRAPHY_DELIMITER"]):
+            self.delimiter_list.addItem(item)
+
+        annot_idx = self.annot_type_combo.findText(config_values["ANNOT_TYPE"])
+        if annot_idx >= 0:
+            self.annot_type_combo.setCurrentIndex(annot_idx)
+
+        color_idx = self.color_combo.findText(config_values["COLOR"])
+        if color_idx >= 0:
+            self.color_combo.setCurrentIndex(color_idx)
+
+        offset_idx = self.offset_combo.findData(config_values["OFFSET"])
+        if offset_idx >= 0:
+            self.offset_combo.setCurrentIndex(offset_idx)
+
+        self.article_breaks_list.clear()
+        for item in self.parse_list_value(config_values["ARTICLE_BREAKS"]):
+            self.article_breaks_list.addItem(item)
+
+        self.soft_year_check.setChecked(config_values["SOFT_YEAR"].lower() == "true")
+        self.deep_search_check.setChecked(config_values["DEEP_SEARCH"].lower() == "true")
+
+        self.search_exclude_list.clear()
+        for item in self.parse_list_value(config_values["SEARCH_EXCLUDE"]):
+            self.search_exclude_list.addItem(item)
+
+        self.alternative_bib_check.setChecked(config_values["ALTERNATIVE_BIB"].lower() == "true")
+        self.list_widget_changed.emit("ALL", None)
+
+    def load_config_dialog(self):
+        """Open file dialog and load selected configuration file."""
+        start_dir = self.get_config_dialog_start_dir()
+        config_path, _ = QFileDialog.getOpenFileName(
+            self,
+            "Load Config File",
+            start_dir,
+            "Config files (*.config *.cfg *.txt);;All files (*)"
+        )
+        if not config_path:
+            return
+
+        self.config_path = config_path
+        self.bridge.set_paths(config_path=self.config_path)
+        self.load_config()
+
     def load_config(self):
         """Load configuration from file."""
         if not self.config_path or not os.path.exists(self.config_path):
@@ -426,48 +553,16 @@ class DocConfig(QWidget):
             return
 
         try:
-            with open(self.config_path, 'r', encoding='utf-8') as f:
-                for line in f:
-                    key, value = self.parse_config_line(line)
-                    if not key:
-                        continue
-
-                    if key == "DEBUG":
-                        self.debug_check.setChecked(value.lower() == "true")
-                    elif key == "SPECIAL_CASE":
-                        self.special_case_list.clear()
-                        for item in self.parse_list_value(value):
-                            self.special_case_list.addItem(item)
-                    elif key == "BIBLIOGRAPHY_DELIMITER":
-                        self.delimiter_list.clear()
-                        for item in self.parse_list_value(value):
-                            self.delimiter_list.addItem(item)
-                    elif key == "ANNOT_TYPE":
-                        idx = self.annot_type_combo.findText(value)
-                        if idx >= 0:
-                            self.annot_type_combo.setCurrentIndex(idx)
-                    elif key == "COLOR":
-                        idx = self.color_combo.findText(value)
-                        if idx >= 0:
-                            self.color_combo.setCurrentIndex(idx)
-                    elif key == "OFFSET":
-                        idx = self.offset_combo.findData(value)
-                        if idx >= 0:
-                            self.offset_combo.setCurrentIndex(idx)
-                    elif key == "ARTICLE_BREAKS":
-                        self.article_breaks_list.clear()
-                        for item in self.parse_list_value(value):
-                            self.article_breaks_list.addItem(item)
-                    elif key == "SOFT_YEAR":
-                        self.soft_year_check.setChecked(value.lower() == "true")
-                    elif key == "DEEP_SEARCH":
-                        self.deep_search_check.setChecked(value.lower() == "true")
-                    elif key == "SEARCH_EXCLUDE":
-                        self.search_exclude_list.clear()
-                        for item in self.parse_list_value(value):
-                            self.search_exclude_list.addItem(item)
-                    elif key == "ALTERNATIVE_BIB":
-                        self.alternative_bib_check.setChecked(value.lower() == "true")
+            config_values = self.parse_config_file(self.config_path)
+            is_valid, error_message = self.validate_config_values(config_values)
+            if not is_valid:
+                QMessageBox.warning(
+                    self,
+                    "Invalid Config",
+                    f"Selected config is invalid:\n{error_message}"
+                )
+                return
+            self.apply_loaded_config(config_values)
 
             # QMessageBox.information(self, "Success", "Config loaded successfully!")
         except Exception as e:
@@ -513,6 +608,20 @@ class DocConfig(QWidget):
 
             lines.append(f"ALTERNATIVE_BIB={self.alternative_bib_check.isChecked()}")
 
+            config_values = {}
+            for line in lines:
+                key, value = self.parse_config_line(line)
+                if key:
+                    config_values[key] = value
+            is_valid, error_message = self.validate_config_values(config_values)
+            if not is_valid:
+                QMessageBox.warning(
+                    self,
+                    "Invalid Config",
+                    f"Cannot save config:\n{error_message}"
+                )
+                return
+
             # Write to file
             with open(self.config_path, 'w', encoding='utf-8') as f:
                 f.write("\n".join(lines))
@@ -520,6 +629,37 @@ class DocConfig(QWidget):
             QMessageBox.information(self, "Success", f"Config saved to: {self.config_path}")
         except Exception as e:
             QMessageBox.critical(self, "Error", f"Error saving config: {e}")
+
+    def save_config_as(self):
+        """Save config using Save As dialog in active config directory."""
+        if not self.config_path:
+            QMessageBox.warning(self, "No Config Path", "Current config path is not set.")
+            return
+
+        current_config = Path(self.config_path).expanduser().resolve()
+        suggested_name = f"{current_config.stem}_copy{current_config.suffix or '.config'}"
+        suggested_path = str(current_config.parent / suggested_name)
+        config_path, _ = QFileDialog.getSaveFileName(
+            self,
+            "Save Config As",
+            suggested_path,
+            "Config files (*.config *.cfg *.txt);;All files (*)"
+        )
+        if not config_path:
+            return
+
+        chosen_path = str(Path(config_path).expanduser().resolve())
+        if chosen_path == str(current_config):
+            QMessageBox.warning(
+                self,
+                "Choose Different Name",
+                "Please choose a different filename than the currently active config."
+            )
+            return
+
+        self.config_path = chosen_path
+        self.bridge.set_paths(config_path=self.config_path)
+        self.save_config()
 
     def clear_all_fields(self):
         """Clear all configuration fields."""
@@ -538,6 +678,16 @@ class DocConfig(QWidget):
         self.parent.clear_text_handlers()
 
         QMessageBox.information(self, "Cleared", "All fields cleared. Configure and save as needed.")
+
+    def show_debug_output(self):
+        """Toggle the debug output window visibility."""
+        if self.parent and hasattr(self.parent, 'debug_output'):
+            if self.parent.debug_output.isVisible():
+                self.parent.debug_output.close()
+            else:
+                self.parent.debug_output.show()
+                self.parent.debug_output.raise_()
+                self.parent.debug_output.activateWindow()
 
     def article_cache_to_list(self, data):
         """Convert zero-based article cache to one-based string list for display."""
@@ -618,4 +768,3 @@ if __name__ == "__main__":
     window.resize(800, 600)
     window.show()
     sys.exit(app.exec())
-
