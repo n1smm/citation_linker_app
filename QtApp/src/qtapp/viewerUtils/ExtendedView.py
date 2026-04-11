@@ -121,7 +121,7 @@ class   ExtendedView(QPdfView):
         self.paint_pages()
         if self.selection_rect:
             painter = QPainter(self.viewport())
-            color = QColor(255, 255, 0, 100)
+            color = QColor(245, 228, 212, 100)
             painter.setBrush(color)
             painter.setPen(Qt.NoPen)
             painter.drawRect(self.selection_rect)
@@ -454,18 +454,22 @@ class   ExtendedView(QPdfView):
         painter = QPainter(self.viewport())
         page_size = self.document().pagePointSize(curr_page)
         zoom = self.effectiveZoomFactor()
-        page_rect = QRect(0, 0, int(page_size.width() * zoom), int(page_size.height() * zoom))
+        page_rect = QRect(0, -1, int(page_size.width() * zoom), int(page_size.height() * zoom))
         rect = self.text_selector.page_to_viewport_coords(page_rect)
+        color = QColor(198, 200, 207, 30)
+        painter.setBrush(color)
+        painter.setPen(Qt.NoPen)
+        painter.drawRect(rect)
         if curr_page == self.first_page or curr_page == self.last_page:
             self.curr_page_rect = rect
-            color = QColor(255, 0, 0, 100)
+            color = QColor(255, 216, 193, 100)
             painter.setBrush(color)
             painter.setPen(Qt.NoPen)
             painter.drawRect(rect)
         for obj in self.text_handler.article_cache:
             for value in obj.values():
                 if curr_page == value:
-                    color = QColor(0, 255, 0, 100)
+                    color = QColor(187, 210, 133, 100)
                     painter.setBrush(color)
                     painter.drawRect(rect)
         painter.end()
