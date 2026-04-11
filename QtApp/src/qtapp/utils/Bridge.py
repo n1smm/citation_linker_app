@@ -36,6 +36,7 @@ class Bridge(QObject):
     """
     config_path_changed = Signal(str)
     linking_finished = Signal(bool, str)
+    log_messages_ready = Signal(list)
 
     def __init__(self, parent=None):
         """Initialize bridge with parent app reference."""
@@ -197,11 +198,23 @@ class Bridge(QObject):
                 return_code = multi_file_main()
             else:
                 return_code = multi_article_main()
+
+            self.log_messages.clear()
+            log_output = get_logs()
+            self.log_messages = self.parse_log_output(log_output)
+            if self.log_messages:
+                print(f"Captured {len(self.log_messages)} log messages")
+                print("first log: ", self.log_messages[0])
+            else:
+                print("Warning: No log messages captured")
+            self.log_messages_ready.emit(self.log_messages)
         except Exception as e:
             print(f"Error during linking process: {e}")
             import traceback
             traceback.print_exc()
             return_code = 1  # Failure
+            self.log_messages = []
+            self.log_messages_ready.emit(self.log_messages)
             
         self.output_file_path = output_file_path
         print("output file path: ", output_file_path)
