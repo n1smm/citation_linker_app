@@ -26,11 +26,10 @@ class TextHandler(QObject):
     """
     def _del__(self):
         """Clean up document resources."""
-        if self.document:
-            try:
-                self.document.close()
-            except Exception:
-                pass
+        try:
+            self.close_document()
+        except Exception:
+            pass
 
     def __init__(self, parent=None):
         """Initialize text handler."""
@@ -39,7 +38,7 @@ class TextHandler(QObject):
 
         self.parent = parent
         self.pdfViewer = None
-        self.document = ""
+        self.document = None
         self.page = 0
         self.selected_text = ""
         self.year_rect = None
@@ -62,10 +61,18 @@ class TextHandler(QObject):
 
     def close_document(self):
         """Close the currently open PyMuPDF document."""
-        if self.document:
-            self.document.close()
-        else:
+        doc = self.document
+        if doc is None:
             print("no document open")
+            return
+
+        try:
+            doc.close()
+        except ValueError:
+            # PyMuPDF can raise ValueError when the document is already closed.
+            pass
+        finally:
+            self.document = None
 
     def clear_all_config_info(self):
         """Clear all configuration data (article cache, delimiters, special cases)."""
@@ -300,4 +307,3 @@ class TextHandler(QObject):
                 "special_cases": self.special_cases,
                 "delimiters" : self.delimiters
                 }
-

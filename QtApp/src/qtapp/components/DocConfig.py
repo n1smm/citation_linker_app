@@ -738,24 +738,28 @@ class DocConfig(QWidget):
 
     def list_widget_update(self, field_name, widget=None):
         """Update TextHandler when list widgets change."""
+        text_handler = getattr(self.parent, "text_handler", None)
+        if text_handler is None:
+            return
+
         if field_name == "SPECIAL_CASE" or field_name == "ALL":
             self.special_cases.clear()
             for i in range(self.special_case_list.count()):
                 self.special_cases.append(self.special_case_list.item(i).text())
-            self.parent.text_handler.special_cases = self.special_cases
+            text_handler.special_cases = self.special_cases
 
         if field_name == "BIBLIOGRAPHY_DELIMITER" or field_name == "ALL":
             self.delimiters.clear()
             for i in range(self.delimiter_list.count()):
                 self.delimiters.append(self.delimiter_list.item(i).text())
-            self.parent.text_handler.delimiters = self.delimiters
+            text_handler.delimiters = self.delimiters
 
         if field_name == "ARTICLE_BREAKS" or field_name == "ALL":
             new_cache = self.article_list_to_cache(self.article_breaks_list)
             self.article_cache.clear()
             self.article_cache.extend(new_cache)
-            self.parent.text_handler.article_cache.clear()
-            self.parent.text_handler.article_cache.extend(new_cache)
+            text_handler.article_cache.clear()
+            text_handler.article_cache.extend(new_cache)
                     
 
 

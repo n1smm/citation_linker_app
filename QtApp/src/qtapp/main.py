@@ -1,31 +1,22 @@
 """
 Main application module for the Citation Linker Qt application.
-Provides the user interface for linking citations in PDF documents to their bibliography entries.
+Provides the tab host for running independent Citation Linker instances.
 """
-import  sys
 import  os
-import  time
-from    importlib.resources             import  files
-from    PySide6.QtCore                  import  Qt, Slot, QFile
-from    PySide6.QtGui                   import  QFontDatabase
-from    PySide6.QtWidgets               import  (QApplication,
-                                                 QMessageBox,
-                                                 QPushButton,
-                                                 QMainWindow,
-                                                 QWidget,
-                                                 QHBoxLayout,
-                                                 QVBoxLayout,
-                                                 QStackedLayout,
-                                                 QLabel,
-                                                 QSizePolicy)
-from    PySide6.QtPdf                   import  QPdfDocument
-from    qtapp.CitationLinkerInstance    import  CitationLinkerInstance
-from    qtapp.components.PdfViewer      import  PdfViewer
-from    qtapp.components.FileManager    import  FileManager
-from    qtapp.utils.TextHandler         import  TextHandler
-from    qtapp.components.DocConfig      import  DocConfig
-from    qtapp.components.DebugOutput    import  DebugOutput
-from    qtapp.utils.Bridge              import  Bridge
+import  sys
+from    importlib.resources             import files
+from    PySide6.QtCore                  import Qt
+from    PySide6.QtGui                   import QFontDatabase
+from    PySide6.QtWidgets               import (QApplication,
+                                                QFileDialog,
+                                                QHBoxLayout,
+                                                QLabel,
+                                                QMainWindow,
+                                                QPushButton,
+                                                QTabWidget,
+                                                QVBoxLayout,
+                                                QWidget)
+from    qtapp.CitationLinkerInstance    import CitationLinkerInstance
 
 class CitationLinkerApp(QMainWindow):
     """
@@ -38,46 +29,84 @@ class CitationLinkerApp(QMainWindow):
 
     def __init__(self):
         super().__init__()
+        self.setWindowTitle("Citation Linker")
 
-        container = QWidget()
-        tabs_container = QWidget()
-        main_layout = QStackedLayout(container)
-        tabs_layout = QHBoxLayout()
+        container = QWidget(self)
+        main_layout = QVBoxLayout(container)
+        top_bar = QHBoxLayout()
+
+        self.new_tab_button = QPushButton("New Tab")
+        self.tab_widget = QTabWidget(self)
+        self.tab_widget.setTabsClosable(True)
+        self.tab_widget.setMovable(True)
+        self.tab_widget.setDocumentMode(True)
+
+        top_bar.setContentsMargins(50, 8, 50, 8)
+        top_bar.addWidget(QLabel("Files"))
+        top_bar.addStretch()
+        top_bar.addWidget(self.new_tab_button)
+
+        main_layout.addLayout(top_bar)
+        main_layout.addWidget(self.tab_widget)
         self.setCentralWidget(container)
 
-        self.tabs = []
-        self.tab_labels = []
+        self.new_tab_button.clicked.connect(self.add_tab_from_picker)
+        self.tab_widget.tabCloseRequested.connect(self.close_tab_at)
 
+    def add_tab_from_picker(self):
+        """Open a file picker and create a tab only when a file is selected."""
+        file_path, _ = QFileDialog.getOpenFileName(
+            self,
+            "Open PDF file",
+            "",
+            "PDF Files (*.pdf);;All Files (*)",
+        )
+        if not file_path:
+            return
 
-    def add_tab(self):
-        """ add a new instance of citation linker with a separate tab label """
+        instance = CitationLinkerInstance()
+        if not instance.load_file(file_path):
+            instance.deleteLater()
+            return
 
-        tmp_instance = CitationLinkerInstance()
-        tmp_tab = {"instance": tmp_instance}
-        tmp_instance.file_upload()
-        filename = tmp_instance.upload_path
-        self.create_label(filename, tmp_tab)
-        self.tabs.append(tmp_instance)
+        filename = os.path.basename(file_path)
+        tab_idx = self.tab_widget.addTab(instance, filename)
+        self.tab_widget.setCurrentIndex(tab_idx)
+        instance.close_requested.connect(self.close_instance_tab)
+        instance.file_loaded.connect(self.on_instance_file_loaded)
 
-    def create_label(self, name, tab):
-        """ creates an element with a filename and x button to close the tab """
-        tab_layout = QHBoxLayout()
-        label = QLabel(name)
-        btn = QPushButton("X")
-        tab_layout.addWidget(label)
-        tab_layout.addWidget(btn)
-        tab["layout"] = tab_layout
-        tab["label"] = label
-        tab["button"] = btn
+    def close_instance_tab(self, instance):
+        """Close the tab that owns the given instance widget."""
+        index = self.tab_widget.indexOf(instance)
+        if index != -1:
+            self.close_tab_at(index)
 
-        
-        
+    def close_tab_at(self, index):
+        """Close one tab and clean up only that instance resources."""
+        widget = self.tab_widget.widget(index)
+        if widget is None:
+            return
 
-        
-        
+        if hasattr(widget, "cleanup_resources"):
+            widget.cleanup_resources()
 
-        
-        
+        self.tab_widget.removeTab(index)
+        widget.deleteLater()
+
+    def on_instance_file_loaded(self, file_path, filename):
+        """Update tab text when an instance reports a newly loaded file."""
+        del file_path
+        instance = self.sender()
+        index = self.tab_widget.indexOf(instance)
+        if index != -1 and filename:
+            self.tab_widget.setTabText(index, filename)
+
+    def closeEvent(self, event):
+        """Close all tab instances cleanly before exiting."""
+        for index in range(self.tab_widget.count() - 1, -1, -1):
+            self.close_tab_at(index)
+        event.accept()
+
 
 def load_fonts():
     """Load custom fonts from the styles/fonts directory."""
@@ -123,17 +152,6 @@ def load_fonts():
         print(f"Error loading fonts: {e}")
         return []
 
-def get_checkmark_path():
-    """Get the absolute path to the checkmark icon."""
-    try:
-        # Try to get path from package resources
-        path = files('qtapp').joinpath('styles/icons/checkmark.svg')
-        # Convert to string path that QSS can use
-        return str(path)
-    except Exception as e:
-        print(f"Could not find checkmark icon: {e}")
-        return ""
-
 def load_stylesheet(filename):
     try:
         path = files('qtapp').joinpath(filename)
@@ -174,7 +192,7 @@ def main():
     print("stylesheeet:    ", stylesheet[:200])
     app.setStyleSheet(stylesheet)
     citationLinkerApp = CitationLinkerApp()
-    citationLinkerApp.showMaximized()  # Start maximized
+    citationLinkerApp.showMaximized()
 
     sys.exit(app.exec())
 

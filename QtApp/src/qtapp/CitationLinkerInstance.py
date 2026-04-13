@@ -1,34 +1,9 @@
 """
- You’re very close, but CitationLinkerInstance still has a few QMainWindow-era assumptions that will break when used as a tab widget. No files were changed.
-
-  ┌─────────────────┬─────────────────────────────────────────────────────────┬────────────────────────────────────────────────────┬──────────────────────────────────────────────────────────────────────────┐
-  │ Area            │ Current issue                                           │ Why it breaks tabs                                 │ Fix in CitationLinkerInstance.py                                         │
-  ├─────────────────┼─────────────────────────────────────────────────────────┼────────────────────────────────────────────────────┼──────────────────────────────────────────────────────────────────────────┤
-  │ Root widget     │ class CitationLinkerInstance(QWidget) but still calls   │ QWidget has no setCentralWidget → runtime error on │ Make layout directly on self (QVBoxLayout(self)) or call                 │
-  │ setup           │ self.setCentralWidget(container) (line ~58)             │ instance creation                                  │ self.setLayout(...); remove container/setCentralWidget pattern           │
-  ├─────────────────┼─────────────────────────────────────────────────────────┼────────────────────────────────────────────────────┼──────────────────────────────────────────────────────────────────────────┤
-  │ Refresh logic   │ self.centralWidget().updateGeometry() in refresh_layout │ QWidget has no centralWidget()                     │ Replace with self.updateGeometry() (and/or update relevant child         │
-  │                 │ (line ~169)                                             │                                                    │ containers)                                                              │
-  ├─────────────────┼─────────────────────────────────────────────────────────┼────────────────────────────────────────────────────┼──────────────────────────────────────────────────────────────────────────┤
-  │ Close button    │ self.exitBtn.clicked.connect(QApplication.quit) (line   │ Closing one tab would quit whole app               │ Replace with tab-close request signal (e.g. close_requested) and let     │
-  │ behavior        │ ~118)                                                   │                                                    │ CitationLinkerApp remove that tab                                        │
-  ├─────────────────┼─────────────────────────────────────────────────────────┼────────────────────────────────────────────────────┼──────────────────────────────────────────────────────────────────────────┤
-  │ Upload flow     │ main.py does tmp_instance.file_upload() immediately     │ file_upload() reads stored path; it does not open  │ Expose a method like start_upload() that calls                           │
-  │ contract        │                                                         │ dialog, so tab label/path can stay empty           │ upload_file_manager.open_file() (or let user click upload in-tab)        │
-  ├─────────────────┼─────────────────────────────────────────────────────────┼────────────────────────────────────────────────────┼──────────────────────────────────────────────────────────────────────────┤
-  │ Tab title       │ main.py reads tmp_instance.upload_path right after      │ Upload may not be ready yet                        │ Emit signal after successful upload (e.g. file_loaded(path, filename))   │
-  │ updates         │ creation                                                │                                                    │ so main window updates tab text at the right time                        │
-  ├─────────────────┼─────────────────────────────────────────────────────────┼────────────────────────────────────────────────────┼──────────────────────────────────────────────────────────────────────────┤
-  │ Imports/cleanup │ QMainWindow imported in instance file but not used      │ Refactor residue, confusing ownership              │ Remove stale imports and keep class purely embeddable QWidget            │
-  └─────────────────┴─────────────────────────────────────────────────────────┴────────────────────────────────────────────────────┴──────────────────────────────────────────────────────────────────────────┘
-
+Citation Linker tab instance widget.
+Each instance is independent and can run in a separate tab.
 """
-import  sys
 import  os
-import  time
-from    importlib.resources             import  files
-from    PySide6.QtCore                  import  Qt, Slot, QFile
-from    PySide6.QtGui                   import  QFontDatabase
+from    PySide6.QtCore                  import  Qt, Signal, Slot
 from    PySide6.QtWidgets               import  (QApplication,
                                                  QMessageBox,
                                                  QPushButton,
@@ -61,15 +36,18 @@ class CitationLinkerInstance(QWidget):
     and provides UI controls for switching between configuration and viewing modes.
     """
 
+    close_requested = Signal(object)
+    file_loaded = Signal(str, str)
+
     def __init__(self):
         """Initialize the main application window and all its components."""
         super().__init__()
 
         self.upload_path = ""
+        self._viewers_initialized = False
+        self._resources_cleaned = False
 
-
-        self.layout = QVBoxLayout(self)
-        self.setLayout(QVBoxLayout())
+        self.main_layout = QVBoxLayout(self)
         self.horizontal_bar = QHBoxLayout()
 
         self.input_container = QWidget()
@@ -78,7 +56,7 @@ class CitationLinkerInstance(QWidget):
         self.output_layout = QHBoxLayout(self.output_container)
         self.stacked_layout = QStackedLayout()
 
-        self.layout.setStretchFactor(self.horizontal_bar, 0)
+        self.main_layout.setStretchFactor(self.horizontal_bar, 0)
 
 
         self.view_environments = []
@@ -89,10 +67,7 @@ class CitationLinkerInstance(QWidget):
         self.debug_output.setWindowTitle("Debug Output")
         self.debug_output.resize(800, 600)
         self.document_config = DocConfig(self, self.bridge)
-        self.upload_file_manager = FileManager(upload=True, pdf=True, parent=self)
         self.save_file_manager = FileManager(upload=False, pdf=True, parent=self)
-        if self.document_config.config_path and os.path.exists(self.document_config.config_path):
-            self.document_config.load_config()
 
         self.create_document_env()
         self.create_document_env("output_doc", output=True)
@@ -121,6 +96,8 @@ class CitationLinkerInstance(QWidget):
 
 
         self.text_handler.set_viewer(self.initial_viewer)
+        if self.document_config.config_path and os.path.exists(self.document_config.config_path):
+            self.document_config.load_config()
         self.document_config.hide()
         self.connect_viewer_signals()
 
@@ -133,20 +110,18 @@ class CitationLinkerInstance(QWidget):
         self.switchViewers.setCheckable(True)
 
 
-        self.upload_file_manager.process_finished.connect(self.file_upload)
         self.configToggle.toggled.connect(self.toggle_config)
         self.switchViewers.toggled.connect(self.switch_views)
         self.startProcess.clicked.connect(self.start_linking_process)
         self.saveFile.clicked.connect(self.save_file_event)
-        self.exitBtn.clicked.connect(QApplication.quit)
+        self.exitBtn.clicked.connect(self.request_close)
         self.bridge.linking_finished.connect(self.open_output_view)
         if hasattr(self.bridge, "log_messages_ready"):
             self.bridge.log_messages_ready.connect(self.debug_output.set_debug_messages)
         self.save_file_manager.process_finished.connect(self.perform_save)
 
 
-        self.layout.addWidget(self.upload_file_manager)
-        self.layout.addWidget(self.filenameLabel)
+        self.main_layout.addWidget(self.filenameLabel)
         self.horizontal_bar.setContentsMargins(50, 2, 50, 2)
         self.input_layout.setContentsMargins(0, 0, 0, 0)
         self.output_layout.setContentsMargins(0, 0, 0, 0)
@@ -168,13 +143,8 @@ class CitationLinkerInstance(QWidget):
         self.config_idx = self.stacked_layout.indexOf(self.document_config)
 
 
-        self.layout.addLayout(self.horizontal_bar, stretch=0)
-        self.layout.addLayout(self.stacked_layout, stretch=1)
-        # self.layout.addLayout(self.input_layout, stretch=1)
-        # self.layout.addLayout(self.output_layout, stretch=1)
-        # self.layout.addWidget(self.document_config, stretch=1)
-
-
+        self.main_layout.addLayout(self.horizontal_bar, stretch=0)
+        self.main_layout.addLayout(self.stacked_layout, stretch=1)
         self.filenameLabel.hide()
         self.configToggle.hide()
         self.startProcess.hide()
@@ -187,9 +157,11 @@ class CitationLinkerInstance(QWidget):
     def refresh_layout(self):
         """Force UI refresh by hiding and showing the main window."""
 
-        self.layout.invalidate()
-        self.layout.activate()
-        self.centralWidget().updateGeometry()
+        self.main_layout.invalidate()
+        self.main_layout.activate()
+        self.updateGeometry()
+        self.input_container.updateGeometry()
+        self.output_container.updateGeometry()
         
         QApplication.processEvents()
         # self.hide()
@@ -198,6 +170,9 @@ class CitationLinkerInstance(QWidget):
     
     def init_viewers_ui(self):
         """Initialize and display all viewer widgets in their respective layouts."""
+        if self._viewers_initialized:
+            return
+
         for env in self.view_environments:
             # Set size policy for viewers to expand and fill space
             env["viewer"].setSizePolicy(QSizePolicy.Policy.Expanding,
@@ -208,6 +183,7 @@ class CitationLinkerInstance(QWidget):
                 self.document_config.list_widget_changed.emit("ALL", None)
             else:
                 self.output_layout.addWidget(env["viewer"])
+        self._viewers_initialized = True
         
     def create_document_env(self, view_type="input_doc", alt=False, output=False):
         """
@@ -302,15 +278,15 @@ class CitationLinkerInstance(QWidget):
         print("start_page: ", start_page)
         
 
-    def file_upload(self):
-        """Handle the file upload process and initialize the main viewer UI."""
-        self.upload_path = self.upload_file_manager.get_file_path()
-        if not self.upload_path:
-            return
+    def load_file(self, file_path):
+        """Load a selected file into this tab instance."""
+        if not file_path:
+            return False
+
+        self.upload_path = file_path
         
         self.initial_viewer.open_viewer(self.upload_path)
         self.document_config.file_path = self.upload_path
-        self.upload_file_manager.hide()
         
         # Update filename label
         filename = os.path.basename(self.upload_path)
@@ -324,6 +300,17 @@ class CitationLinkerInstance(QWidget):
         self.saveFile.show()
         self.exitBtn.show()
         self.init_viewers_ui()
+        self.file_loaded.emit(self.upload_path, filename)
+        return True
+
+    def file_upload(self):
+        """Compatibility wrapper for previous upload-manager flow."""
+        return self.load_file(self.upload_path)
+
+    @Slot()
+    def request_close(self):
+        """Ask the host window to close this instance tab."""
+        self.close_requested.emit(self)
 
     def start_linking_process(self):
         """Initiate the citation linking process after user confirmation."""
@@ -452,14 +439,32 @@ class CitationLinkerInstance(QWidget):
         
         self.save_file_manager.reset_manager(upload=False, pdf=True)
 
-    def closeEvent(self, event):
-        """Clean up resources when the application window is closed."""
+    def cleanup_resources(self):
+        """Release document resources used by this instance."""
+        if self._resources_cleaned:
+            return
+
+        closed_handlers = set()
+        closed_documents = set()
         for env in self.view_environments:
-            env["text_handler"].close_document()
+            text_handler = env["text_handler"]
+            handler_id = id(text_handler)
+            if handler_id not in closed_handlers:
+                text_handler.close_document()
+                closed_handlers.add(handler_id)
+
             doc = env["document"]
             if isinstance(doc, QPdfDocument):
-                doc.close()
+                doc_id = id(doc)
+                if doc_id not in closed_documents:
+                    try:
+                        doc.close()
+                    except RuntimeError:
+                        pass
+                    closed_documents.add(doc_id)
+        self._resources_cleaned = True
+
+    def closeEvent(self, event):
+        """Clean up resources when the instance widget is closed."""
+        self.cleanup_resources()
         event.accept()
-
-
-
