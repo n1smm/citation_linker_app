@@ -9,6 +9,7 @@ import  subprocess
 import  pymupdf
 import  shutil
 import  time
+import  json
 from    pathlib                         import  Path
 from    PySide6.QtCore                  import  QObject, Signal, Slot
 
@@ -52,6 +53,7 @@ class Bridge(QObject):
         self.output_dir= ""
         self.input_file_path = ""
         self.output_file_path = ""
+        self.log_messages = []
         self.user_shell = self.get_user_shell()
         self.config_path = self.get_config_path()
 
@@ -181,6 +183,9 @@ class Bridge(QObject):
         Returns:
             tuple: (success: bool, output_file_path: str)
         """
+        from    citation_linker.configLoad      import  config
+        from    citation_linker.appLogger       import  get_logs, reset_log_buffer, get_logger
+
         self.parent.document_config.save_config()
         self.get_input_file_path()
         base, ext = os.path.splitext(os.path.basename(self.input_file_path))
@@ -188,6 +193,10 @@ class Bridge(QObject):
         shutil.copy(self.input_file_path, os.path.join(self.input_dir, base+ext))
         output_file_base = base + "_linked" + ext
         output_file_path = os.path.join(self.output_dir, output_file_base)
+
+        config["UI"] = ["True"]
+        get_logger()
+        reset_log_buffer()
 
         try:
             # Call the appropriate main function directly
@@ -222,6 +231,17 @@ class Bridge(QObject):
         success = return_code == 0 and os.path.exists(output_file_path)
         self.linking_finished.emit(success, output_file_path)
         return (success, output_file_path)
+
+    def parse_log_output(self, log_output):
+        """Parse JSON log lines into dictionaries."""
+        messages = []
+        for line in log_output.strip().split("\n"):
+            if line:
+                try:
+                    messages.append(json.loads(line))
+                except json.JSONDecodeError:
+                    pass
+        return messages
 
 
     def delete_files_in_dir(self, dir):
