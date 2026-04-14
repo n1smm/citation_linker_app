@@ -162,7 +162,7 @@ class Bridge(QObject):
             print(f"Error setting paths: {e}")
 
 
-    def start_linking_process(self, cmd_in=None):
+    def start_linking_process(self, cmd_in=None, skip_ui_prep=False):
         """
         Execute the citation linking process by calling main functions directly.
         
@@ -186,11 +186,13 @@ class Bridge(QObject):
         from    citation_linker.configLoad      import  config
         from    citation_linker.appLogger       import  get_logs, reset_log_buffer, get_logger
 
-        self.parent.document_config.save_config()
-        self.get_input_file_path()
+        if not skip_ui_prep:
+            self.parent.document_config.save_config()
+            self.get_input_file_path()
+
         base, ext = os.path.splitext(os.path.basename(self.input_file_path))
         self.delete_files_in_dir(self.input_dir)
-        shutil.copy(self.input_file_path, os.path.join(self.input_dir, base+ext))
+        shutil.copy(self.input_file_path, os.path.join(self.input_dir, base + ext))
         output_file_base = base + "_linked" + ext
         output_file_path = os.path.join(self.output_dir, output_file_base)
 
@@ -224,10 +226,10 @@ class Bridge(QObject):
             return_code = 1  # Failure
             self.log_messages = []
             self.log_messages_ready.emit(self.log_messages)
-            
+
         self.output_file_path = output_file_path
         print("output file path: ", output_file_path)
-        
+
         success = return_code == 0 and os.path.exists(output_file_path)
         self.linking_finished.emit(success, output_file_path)
         return (success, output_file_path)

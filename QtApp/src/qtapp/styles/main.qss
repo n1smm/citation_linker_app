@@ -252,6 +252,36 @@ QSpinBox::up-button:pressed, QSpinBox::down-button:pressed {
 	background: --pale-oak;
 }
 
+/* ===== LOADING WINDOW ===== */
+
+QDialog#loadingWindow {
+	background-color: --almond-cream;
+	border: 2px solid --ink-black;
+	border-radius: 10px;
+}
+
+QLabel#loadingWindowLabel {
+	color: --ink-black;
+	font-family: "Work Sans", sans-serif;
+	font-weight: bold;
+}
+
+QProgressBar#loadingProgressBar {
+	background-color: --bone;
+	border: 1px solid --pale-slate;
+	border-radius: 8px;
+	min-height: 10px;
+	min-width: 200px;
+}
+
+QProgressBar#loadingProgressBar::chunk {
+	background: qlineargradient(
+		x1:0, y1:0, x2:1, y2:0,
+		stop:0 --dry-sage, stop:1 --charcoal-blue
+	);
+	border-radius: 12px;
+}
+
 /* ===== CHECKBOX ===== */
 
 QCheckBox {

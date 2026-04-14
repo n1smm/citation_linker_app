@@ -3,9 +3,11 @@ Citation Linker tab instance widget.
 Each instance is independent and can run in a separate tab.
 """
 import  os
-from    PySide6.QtCore                  import  Qt, Signal, Slot
+from    PySide6.QtCore                  import  QObject, QThread, Qt, Signal, Slot
 from    PySide6.QtWidgets               import  (QApplication,
+                                                 QDialog,
                                                  QMessageBox,
+                                                 QProgressBar,
                                                  QPushButton,
                                                  QWidget,
                                                  QHBoxLayout,
@@ -20,6 +22,22 @@ from    qtapp.utils.TextHandler         import  TextHandler
 from    qtapp.components.DocConfig      import  DocConfig
 from    qtapp.components.DebugOutput    import  DebugOutput
 from    qtapp.utils.Bridge              import  Bridge
+
+class LinkingWorker(QObject):
+    """Runs the linking process in a worker thread."""
+    finished = Signal()
+
+    def __init__(self, bridge, cmd_in=None):
+        super().__init__()
+        self.bridge = bridge
+        self.cmd_in = cmd_in
+
+    @Slot()
+    def run(self):
+        try:
+            self.bridge.start_linking_process(cmd_in=self.cmd_in, skip_ui_prep=True)
+        finally:
+            self.finished.emit()
 
 class CitationLinkerInstance(QWidget):
     """ 
@@ -83,6 +101,10 @@ class CitationLinkerInstance(QWidget):
         self.initial_viewer = next(env["viewer"]
                                    for env in self.view_environments if 
                                    env["type"] == "input_doc")
+        self._linking_thread = None
+        self._linking_worker = None
+        self.loading_window = None
+        self.loading_bar = None
 
 
         self.configToggle = QPushButton("config")
@@ -115,6 +137,7 @@ class CitationLinkerInstance(QWidget):
         self.startProcess.clicked.connect(self.start_linking_process)
         self.saveFile.clicked.connect(self.save_file_event)
         self.exitBtn.clicked.connect(self.request_close)
+        self.bridge.linking_finished.connect(self.on_linking_finished_ui)
         self.bridge.linking_finished.connect(self.open_output_view)
         if hasattr(self.bridge, "log_messages_ready"):
             self.bridge.log_messages_ready.connect(self.debug_output.set_debug_messages)
@@ -153,6 +176,42 @@ class CitationLinkerInstance(QWidget):
         self.exitBtn.hide()
         self.document_config.hide()
 
+
+    def setup_loading_window(self):
+        """Create a small modeless progress window."""
+        if self.loading_window is not None:
+            return
+        self.loading_window = QDialog(self, Qt.WindowTitleHint | Qt.CustomizeWindowHint)
+        self.loading_window.setObjectName("loadingWindow")
+        self.loading_window.setWindowTitle("Processing")
+        self.loading_window.setModal(False)
+        self.loading_window.setFixedSize(260, 90)
+
+        layout = QVBoxLayout(self.loading_window)
+        layout.setContentsMargins(12, 12, 12, 12)
+        layout.setSpacing(8)
+
+        label = QLabel("Linking citations...")
+        label.setObjectName("loadingWindowLabel")
+        self.loading_bar = QProgressBar()
+        self.loading_bar.setObjectName("loadingProgressBar")
+        self.loading_bar.setRange(0, 0)
+        self.loading_bar.setTextVisible(False)
+
+        layout.addWidget(label)
+        layout.addWidget(self.loading_bar, alignment=Qt.AlignmentFlag.AlignHCenter)
+
+    def show_loading_window(self):
+        """Show and activate processing indicator window."""
+        self.setup_loading_window()
+        self.loading_window.show()
+        self.loading_window.raise_()
+        self.loading_window.activateWindow()
+
+    def hide_loading_window(self):
+        """Hide processing indicator window if visible."""
+        if self.loading_window is not None:
+            self.loading_window.hide()
 
     def refresh_layout(self):
         """Force UI refresh by hiding and showing the main window."""
@@ -314,6 +373,9 @@ class CitationLinkerInstance(QWidget):
 
     def start_linking_process(self):
         """Initiate the citation linking process after user confirmation."""
+        if self._linking_thread is not None and self._linking_thread.isRunning():
+            return
+
         update_data = self.text_handler.get_config_data()
         print(update_data)
         self.document_config.set_data_from_view(update_data)
@@ -323,9 +385,37 @@ class CitationLinkerInstance(QWidget):
                                  "if the configuration is okay."),
                                 QMessageBox.Yes | QMessageBox.No)
         if reply == QMessageBox.Yes:
-            self.bridge.start_linking_process()
+            self.document_config.save_config()
+            self.bridge.input_file_path = self.upload_path
+            self.startProcess.setEnabled(False)
+            self.show_loading_window()
+
+            self._linking_thread = QThread(self)
+            self._linking_worker = LinkingWorker(self.bridge)
+            self._linking_worker.moveToThread(self._linking_thread)
+
+            self._linking_thread.started.connect(self._linking_worker.run)
+            self._linking_worker.finished.connect(self._linking_thread.quit)
+            self._linking_worker.finished.connect(self._linking_worker.deleteLater)
+            self._linking_thread.finished.connect(self._linking_thread.deleteLater)
+            self._linking_thread.finished.connect(self.on_linking_worker_finished)
+
+            self._linking_thread.start()
         else:
             pass
+
+    @Slot(bool, str)
+    def on_linking_finished_ui(self, success, output_file_path):
+        """Reset UI state when linking completes."""
+        del success, output_file_path
+        self.hide_loading_window()
+        self.startProcess.setEnabled(True)
+
+    @Slot()
+    def on_linking_worker_finished(self):
+        """Release worker/thread references after completion."""
+        self._linking_thread = None
+        self._linking_worker = None
 
     @Slot()
     def send_link_data(self, data):
@@ -462,6 +552,7 @@ class CitationLinkerInstance(QWidget):
                     except RuntimeError:
                         pass
                     closed_documents.add(doc_id)
+        self.hide_loading_window()
         self._resources_cleaned = True
 
     def closeEvent(self, event):
