@@ -6,14 +6,16 @@ import  os
 import  sys
 from    importlib.resources             import files
 from    PySide6.QtCore                  import Qt
-from    PySide6.QtGui                   import QFontDatabase
+from    PySide6.QtGui                   import QFontDatabase, QPixmap
 from    PySide6.QtWidgets               import (QApplication,
                                                 QFileDialog,
                                                 QHBoxLayout,
                                                 QLabel,
                                                 QMainWindow,
                                                 QPushButton,
+                                                QTabBar,
                                                 QTabWidget,
+                                                QToolButton,
                                                 QVBoxLayout,
                                                 QWidget)
 from    qtapp.CitationLinkerInstance    import CitationLinkerInstance
@@ -32,26 +34,74 @@ class CitationLinkerApp(QMainWindow):
         self.setWindowTitle("Citation Linker")
 
         container = QWidget(self)
-        main_layout = QVBoxLayout(container)
+        self.main_layout = QVBoxLayout(container)
         top_bar = QHBoxLayout()
+        landing_layout = QVBoxLayout()
+        
 
         self.new_tab_button = QPushButton("New Tab")
         self.tab_widget = QTabWidget(self)
-        self.tab_widget.setTabsClosable(True)
+        self.tab_widget.setTabsClosable(False)
         self.tab_widget.setMovable(True)
         self.tab_widget.setDocumentMode(True)
 
-        top_bar.setContentsMargins(50, 8, 50, 8)
+        top_bar.setContentsMargins(50, 2, 50, 2)
         top_bar.addWidget(QLabel("Files"))
         top_bar.addStretch()
         top_bar.addWidget(self.new_tab_button)
 
-        main_layout.addLayout(top_bar)
-        main_layout.addWidget(self.tab_widget)
+        self.empty_tabs_placeholder  = QLabel("Citaton Linker App")
+        self.empty_tabs_icon = QLabel()
+        pixmap = load_pixmap("styles/icons/logo.png")
+        if pixmap.isNull():
+            self.empty_tabs_icon.setText("Logo unavailable")
+        else:
+            self.empty_tabs_icon.setPixmap(pixmap)
+            """
+            "--dry-sage": "#BBB385",
+            "--pale-oak": "#D8CCAD",
+            "--bone": "#E7D8C1",
+            "--almond-cream": "#F5E4D4",
+            "--ink-black": "#161C23",
+            "--black": "#06080C",
+            "--charcoal-blue": "#3C4048",
+            "--dim-gray": "#6a6d75",
+            "--pale-slate": "#C6C8CF",
+            """
+
+        self.empty_tabs_text = QLabel()
+        self.empty_tabs_text.setWordWrap(True)
+        self.empty_tabs_text.setMinimumWidth(600)
+        self.empty_tabs_text.setText("""
+<p>Citation Linker is a Qt-based application for creating hyperlinks between in-text citations and bibliography entries in PDF documents. It provides an interactive interface for marking citations, configuring document settings, and generating linked output PDFs.</p>
+
+        """)
+
+        self.empty_tabs_placeholder.setStyleSheet("""
+                                                  font-size: 30px;
+                                                  color: "#3c4048";
+                                                  """)
+        self.empty_tabs_text.setStyleSheet("""
+                                           font-size: 18px;
+                                           """)
+        # landing_layout.addStretch()
+        landing_layout.addWidget(self.empty_tabs_placeholder, alignment=Qt.AlignmentFlag.AlignHCenter)
+        landing_layout.addWidget(self.empty_tabs_icon, alignment=Qt.AlignmentFlag.AlignHCenter)
+        landing_layout.addWidget(self.empty_tabs_text, alignment=Qt.AlignmentFlag.AlignHCenter)
+        # landing_layout.addStretch()
+
+        self.main_layout.addLayout(top_bar)
+        self.main_layout.addLayout(landing_layout)
+        self.main_layout.addWidget(self.tab_widget)
+        self.tab_widget.hide()
         self.setCentralWidget(container)
 
         self.new_tab_button.clicked.connect(self.add_tab_from_picker)
-        self.tab_widget.tabCloseRequested.connect(self.close_tab_at)
+
+    def landing_page(self):
+        if self.tab_widget.count() == 0:
+            self.main_layout.addWidget(self.empty_tabs_placeholder)
+
 
     def add_tab_from_picker(self):
         """Open a file picker and create a tab only when a file is selected."""
@@ -69,11 +119,26 @@ class CitationLinkerApp(QMainWindow):
             instance.deleteLater()
             return
 
+        # self.main_layout.removeWidget(self.empty_tabs_placeholder)
+        self.empty_tabs_placeholder.hide()
+        self.empty_tabs_icon.hide()
+        self.empty_tabs_text.hide()
+        self.tab_widget.show()
         filename = os.path.basename(file_path)
         tab_idx = self.tab_widget.addTab(instance, filename)
         self.tab_widget.setCurrentIndex(tab_idx)
+        self.attach_tab_close_button(tab_idx, instance)
         instance.close_requested.connect(self.close_instance_tab)
         instance.file_loaded.connect(self.on_instance_file_loaded)
+
+    def attach_tab_close_button(self, tab_idx, instance):
+        """Attach a visible rounded close button to the given tab."""
+        close_button = QToolButton(self.tab_widget)
+        close_button.setObjectName("tabCloseButton")
+        close_button.setText("×")
+        close_button.setCursor(Qt.PointingHandCursor)
+        close_button.clicked.connect(lambda _=False, inst=instance: self.close_instance_tab(inst))
+        self.tab_widget.tabBar().setTabButton(tab_idx, QTabBar.ButtonPosition.RightSide, close_button)
 
     def close_instance_tab(self, instance):
         """Close the tab that owns the given instance widget."""
@@ -177,6 +242,18 @@ def load_stylesheet(filename):
     except Exception as e:
         print("couldn't load stylesheet: ", e)
         return ""
+
+def load_pixmap(filename):
+    """Load a pixmap from packaged resources."""
+    try:
+        path = files('qtapp').joinpath(filename)
+        pixmap = QPixmap()
+        if not pixmap.loadFromData(path.read_bytes()):
+            print(f"Could not decode pixmap: {filename}")
+        return pixmap
+    except Exception as e:
+        print(f"Could not load pixmap {filename}: {e}")
+        return QPixmap()
 
 def main():
     """Initialize and run the Citation Linker application."""
