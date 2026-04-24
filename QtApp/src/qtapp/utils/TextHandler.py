@@ -24,7 +24,7 @@ class TextHandler(QObject):
     - Year extraction from citations
     - Configuration data management (delimiters, special cases, articles)
     """
-    def _del__(self):
+    def __del__(self):
         """Clean up document resources."""
         try:
             self.close_document()
@@ -57,6 +57,7 @@ class TextHandler(QObject):
 
     def assign_document(self, doc):
         """Open and assign a PyMuPDF document from file path."""
+        self.close_document()
         self.document = pymupdf.open(doc)
 
     def close_document(self):

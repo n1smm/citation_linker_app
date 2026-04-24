@@ -22,6 +22,7 @@ from    qtapp.utils.TextHandler         import  TextHandler
 from    qtapp.components.DocConfig      import  DocConfig
 from    qtapp.components.DebugOutput    import  DebugOutput
 from    qtapp.utils.Bridge              import  Bridge
+from    citation_linker.io_safe         import  atomic_replace_save, normalize_path, FileLockError
 
 class LinkingWorker(QObject):
     """Runs the linking process in a worker thread."""
@@ -521,9 +522,16 @@ class CitationLinkerInstance(QWidget):
         
         if pymu_doc:
             try:
-                pymu_doc.save(save_path)
+                target_path = normalize_path(save_path)
+                atomic_replace_save(target_path, lambda temp_path: pymu_doc.save(temp_path))
                 QMessageBox.information(self, "Success", 
-                                      f"File saved to output directory and to:\n{save_path}")
+                                      f"File saved to output directory and to:\n{target_path}")
+            except FileLockError as e:
+                QMessageBox.critical(
+                    self,
+                    "File Locked",
+                    f"Cannot save because the destination file is in use:\n{e}",
+                )
             except Exception as e:
                 QMessageBox.critical(self, "Error", f"Error saving copy to chosen location:\n{e}")
         

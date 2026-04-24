@@ -23,9 +23,10 @@ from    PySide6.QtWidgets               import  (QWidget,
                                                  QListWidget,
                                                  QGroupBox,
                                                  QSizePolicy,
-                                                 QScrollArea,)
+                                                  QScrollArea,)
 
 from    qtapp.components.FileManager    import  FileManager
+from    citation_linker.io_safe         import  atomic_write_bytes, normalize_path, FileLockError
 
 class DocConfig(QWidget):
     """
@@ -622,11 +623,17 @@ class DocConfig(QWidget):
                 )
                 return
 
-            # Write to file
-            with open(self.config_path, 'w', encoding='utf-8') as f:
-                f.write("\n".join(lines))
+            # Write to file atomically for cross-platform safety.
+            config_path = normalize_path(self.config_path)
+            atomic_write_bytes(config_path, "\n".join(lines).encode("utf-8"))
 
             QMessageBox.information(self, "Success", f"Config saved to: {self.config_path}")
+        except FileLockError as e:
+            QMessageBox.critical(
+                self,
+                "File Locked",
+                f"Cannot save config because the destination file is in use:\n{e}",
+            )
         except Exception as e:
             QMessageBox.critical(self, "Error", f"Error saving config: {e}")
 
