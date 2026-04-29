@@ -5,6 +5,7 @@ Provides forms for all configuration options with load/save functionality.
 import  re
 import  os
 import  sys
+import  json
 import  subprocess
 from    pathlib                         import  Path
 from    PySide6.QtCore                  import  Qt, QFile, Slot, Signal
@@ -59,6 +60,7 @@ class DocConfig(QWidget):
         "DEEP_SEARCH",
         "SEARCH_EXCLUDE",
         "ALTERNATIVE_BIB",
+        "LEGACY",
     }
 
     def __init__(self, parent=None, bridge=None):
@@ -206,6 +208,11 @@ class DocConfig(QWidget):
         text_group.setLayout(text_layout)
         scroll_layout.addWidget(text_group)
 
+        # --- Bib Structure Editor launcher ---
+        bib_struct_btn = QPushButton("Edit Bibliography Structure (modular parser)...")
+        bib_struct_btn.clicked.connect(self.show_bib_structure_editor)
+        scroll_layout.addWidget(bib_struct_btn)
+
         # --- Boolean Fields Group ---
         bool_group = QGroupBox("Boolean Options")
         bool_layout = QGridLayout()
@@ -263,6 +270,20 @@ class DocConfig(QWidget):
             "Handle bibliography entries that start with year followed by period, then the work.\n"
             "Format: (Year). Work title...\n"
             "WARNING: May create links where they shouldn't be."))
+        bool_layout.addWidget(help_btn, bool_row, 2)
+        bool_row += 1
+
+        # LEGACY
+        bool_layout.addWidget(QLabel("LEGACY:"), bool_row, 0)
+        self.legacy_check = QCheckBox()
+        bool_layout.addWidget(self.legacy_check, bool_row, 1)
+        help_btn = QPushButton("?")
+        help_btn.setMaximumWidth(30)
+        help_btn.clicked.connect(lambda: self.show_help(
+            "Legacy Bibliography Parser",
+            "Use the legacy bibliography parser instead of the modular one.\n"
+            "When disabled, the modular parser is used and BIB_STRUCTURE must be defined.\n"
+            "If BIB_STRUCTURE is not set, the parser automatically falls back to legacy."))
         bool_layout.addWidget(help_btn, bool_row, 2)
 
         bool_group.setLayout(bool_layout)
@@ -436,7 +457,7 @@ class DocConfig(QWidget):
         if missing_keys:
             return False, f"Missing required keys: {', '.join(missing_keys)}"
 
-        bool_keys = ("DEBUG", "SOFT_YEAR", "DEEP_SEARCH", "ALTERNATIVE_BIB")
+        bool_keys = ("DEBUG", "SOFT_YEAR", "DEEP_SEARCH", "ALTERNATIVE_BIB", "LEGACY")
         for key in bool_keys:
             value = config_values.get(key, "").strip().lower()
             if value not in ("true", "false"):
@@ -528,6 +549,8 @@ class DocConfig(QWidget):
             self.search_exclude_list.addItem(item)
 
         self.alternative_bib_check.setChecked(config_values["ALTERNATIVE_BIB"].lower() == "true")
+        self.legacy_check.setChecked(config_values["LEGACY"].lower() == "true")
+        self._set_bib_structures(config_values.get("BIB_STRUCTURE", "[]"))
         self.list_widget_changed.emit("ALL", None)
 
     def load_config_dialog(self):
@@ -608,6 +631,11 @@ class DocConfig(QWidget):
             lines.append(f"SEARCH_EXCLUDE={search_exclude}")
 
             lines.append(f"ALTERNATIVE_BIB={self.alternative_bib_check.isChecked()}")
+            lines.append(f"LEGACY={self.legacy_check.isChecked()}")
+
+            bib_structures_json = self._get_bib_structures_json()
+            if bib_structures_json and bib_structures_json != "[]":
+                lines.append(f"BIB_STRUCTURE={bib_structures_json}")
 
             config_values = {}
             for line in lines:
@@ -681,6 +709,7 @@ class DocConfig(QWidget):
         self.deep_search_check.setChecked(False)
         self.search_exclude_list.clear()
         self.alternative_bib_check.setChecked(False)
+        self.legacy_check.setChecked(True)
 
         self.parent.clear_text_handlers()
 
@@ -695,6 +724,37 @@ class DocConfig(QWidget):
                 self.parent.debug_output.show()
                 self.parent.debug_output.raise_()
                 self.parent.debug_output.activateWindow()
+
+    def show_bib_structure_editor(self):
+        """Open the BibStructureEditor window."""
+        editor = getattr(self.parent, "bib_structure_editor", None)
+        if editor is None:
+            return
+        if editor.isVisible():
+            editor.raise_()
+            editor.activateWindow()
+        else:
+            editor.show()
+            editor.raise_()
+            editor.activateWindow()
+
+    def _get_bib_structures_json(self):
+        """Return the JSON string from the editor, or '[]' if unavailable."""
+        editor = getattr(self.parent, "bib_structure_editor", None)
+        if editor is None:
+            return "[]"
+        return editor.get_structures_json()
+
+    def _set_bib_structures(self, raw_value):
+        """Parse raw_value and push it into the editor."""
+        editor = getattr(self.parent, "bib_structure_editor", None)
+        if editor is None:
+            return
+        try:
+            data = json.loads(raw_value) if isinstance(raw_value, str) else raw_value
+        except (json.JSONDecodeError, TypeError):
+            data = []
+        editor.set_structures(data)
 
     def article_cache_to_list(self, data):
         """Convert zero-based article cache to one-based string list for display."""

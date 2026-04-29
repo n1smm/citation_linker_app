@@ -41,6 +41,8 @@ class Bridge(QObject):
     config_path_changed = Signal(str)
     linking_finished = Signal(bool, str)
     log_messages_ready = Signal(list)
+    bib_entries_ready = Signal(list)
+    cit_entries_ready = Signal(list)
 
     def __init__(self, parent=None):
         """Initialize bridge with parent app reference."""
@@ -187,7 +189,9 @@ class Bridge(QObject):
             tuple: (success: bool, output_file_path: str)
         """
         from    citation_linker.configLoad      import  config
-        from    citation_linker.appLogger       import  get_logs, reset_log_buffer, get_logger
+        from    citation_linker.appLogger       import  (get_logs, reset_log_buffer, get_logger,
+                                                          get_bib_entries, get_cit_entries,
+                                                          reset_data_buffers)
 
         output_file_path = ""
         try:
@@ -221,6 +225,7 @@ class Bridge(QObject):
         config["UI"] = ["True"]
         get_logger()
         reset_log_buffer()
+        reset_data_buffers()
 
         try:
             # Call the appropriate main function directly
@@ -241,6 +246,8 @@ class Bridge(QObject):
             else:
                 print("Warning: No log messages captured")
             self.log_messages_ready.emit(self.log_messages)
+            self.bib_entries_ready.emit(get_bib_entries())
+            self.cit_entries_ready.emit(get_cit_entries())
         except Exception as e:
             print(f"Error during linking process: {e}")
             import traceback

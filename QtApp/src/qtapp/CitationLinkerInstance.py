@@ -20,7 +20,8 @@ from    qtapp.components.PdfViewer      import  PdfViewer
 from    qtapp.components.FileManager    import  FileManager
 from    qtapp.utils.TextHandler         import  TextHandler
 from    qtapp.components.DocConfig      import  DocConfig
-from    qtapp.components.DebugOutput    import  DebugOutput
+from    qtapp.components.DebugOutput            import  DebugOutput
+from    qtapp.components.BibStructureEditor     import  BibStructureEditor
 from    qtapp.utils.Bridge              import  Bridge
 from    citation_linker.io_safe         import  atomic_replace_save, normalize_path, FileLockError
 
@@ -85,6 +86,7 @@ class CitationLinkerInstance(QWidget):
         self.debug_output.setWindowFlags(Qt.Window)
         self.debug_output.setWindowTitle("Debug Output")
         self.debug_output.resize(800, 600)
+        self.bib_structure_editor = BibStructureEditor(parent=self)
         self.document_config = DocConfig(self, self.bridge)
         self.save_file_manager = FileManager(upload=False, pdf=True, parent=self)
 
@@ -142,6 +144,10 @@ class CitationLinkerInstance(QWidget):
         self.bridge.linking_finished.connect(self.open_output_view)
         if hasattr(self.bridge, "log_messages_ready"):
             self.bridge.log_messages_ready.connect(self.debug_output.set_debug_messages)
+        if hasattr(self.bridge, "bib_entries_ready"):
+            self.bridge.bib_entries_ready.connect(self.debug_output.set_bib_entries)
+        if hasattr(self.bridge, "cit_entries_ready"):
+            self.bridge.cit_entries_ready.connect(self.debug_output.set_cit_entries)
         self.save_file_manager.process_finished.connect(self.perform_save)
 
 
