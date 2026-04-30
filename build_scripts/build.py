@@ -37,7 +37,7 @@ def build_executable():
         '--clean',  # Clean PyInstaller cache
     ], check=True)
 
-    print("\n✓ Build complete!")
+    print("\n[OK] Build complete!")
     print(f"Executable location: dist/")
 
     if sys.platform == 'darwin':
