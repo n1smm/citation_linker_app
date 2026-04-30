@@ -26,12 +26,10 @@ class TextHandler(QObject):
     """
     def __del__(self):
         """Clean up document resources."""
-        # Safe cleanup: check instance type and is_closed to avoid errors
-        if isinstance(self.document, pymupdf.Document) and not self.document.is_closed:
-            try:
-                self.document.close()
-            except Exception:
-                pass
+        try:
+            self.close_document()
+        except Exception:
+            pass
 
     def __init__(self, parent=None):
         """Initialize text handler."""
@@ -40,7 +38,7 @@ class TextHandler(QObject):
 
         self.parent = parent
         self.pdfViewer = None
-        self.document = ""
+        self.document = None
         self.page = 0
         self.selected_text = ""
         self.year_rect = None
@@ -59,16 +57,23 @@ class TextHandler(QObject):
 
     def assign_document(self, doc):
         """Open and assign a PyMuPDF document from file path."""
+        self.close_document()
         self.document = pymupdf.open(doc)
 
     def close_document(self):
         """Close the currently open PyMuPDF document."""
-        # Check if document is a PyMuPDF Document object and not already closed
-        # Using is_closed is safe and doesn't trigger __len__ which would raise on closed docs
-        if isinstance(self.document, pymupdf.Document) and not self.document.is_closed:
-            self.document.close()
-        else:
+        doc = self.document
+        if doc is None:
             print("no document open")
+            return
+
+        try:
+            doc.close()
+        except ValueError:
+            # PyMuPDF can raise ValueError when the document is already closed.
+            pass
+        finally:
+            self.document = None
 
     def clear_all_config_info(self):
         """Clear all configuration data (article cache, delimiters, special cases)."""
@@ -176,7 +181,7 @@ class TextHandler(QObject):
         if action == "delete":
             self.page.delete_annot(annot)
             # annot.delete()
-            # print(f"Annotation {annot_idx} deleted.")
+            print(f"Annotation {annot_idx} deleted.")
         elif action == "toggle_type":
             if annot.type[1] == "Underline":
                 annot.set_info(type=pymupdf.PDF_ANNOT_HIGHLIGHT)
@@ -303,4 +308,3 @@ class TextHandler(QObject):
                 "special_cases": self.special_cases,
                 "delimiters" : self.delimiters
                 }
-

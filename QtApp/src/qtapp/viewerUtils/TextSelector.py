@@ -5,7 +5,7 @@ Handles viewport-to-page coordinate conversion for PDF text selection.
 from    PySide6.QtCore                  import  Qt, QPointF, QPoint, QRect, QRectF, QSize, QSizeF, Slot, Signal, QObject
 from    PySide6.QtPdfWidgets            import  QPdfView
 from    PySide6.QtPdf                   import  QPdfDocument, QPdfPageNavigator, QPdfSelection
-from    PySide6.QtGui                   import  QKeyEvent, QMouseEvent
+from    PySide6.QtGui                   import  QKeyEvent, QMouseEvent, QPalette, QColor, QBrush
 from    PySide6.QtWidgets               import  QRubberBand
 
 from    pymupdf                         import Rect
@@ -30,7 +30,7 @@ class TextSelector(QObject):
         super().__init__(parent) 
         ### member declarations
         self.parent = parent
-        # print("selector: ", parent)
+        print("selector: ", parent)
         self.selecting = False
         self.origin = QPoint()
         self.rubberBand = QRubberBand(QRubberBand.Rectangle, parent)
@@ -45,6 +45,14 @@ class TextSelector(QObject):
         self.current_rectF = QRectF()
         self.h_offset = 0
         self.w_offset = 0
+
+        #set rubberband selector color
+        palette = QPalette()
+        palette.setBrush(QPalette.ColorRole.Highlight, QColor(187, 179, 133, 100))
+        palette.setBrush(QPalette.ColorRole.Base, QColor(216, 204, 173, 100))
+        self.rubberBand.setPalette(palette)
+
+
 
 
     ### methods
@@ -99,6 +107,10 @@ class TextSelector(QObject):
         if event.button() == Qt.LeftButton:
             self.origin = event.pos()
             self.rubberBand.setGeometry(QRect(self.origin, QSize()))
+            palette = QPalette()
+            palette.setBrush(QPalette.ColorRole.Highlight, QColor(187, 179, 133, 100))
+            palette.setBrush(QPalette.ColorRole.Base, QColor(216, 204, 173, 100))
+            self.rubberBand.setPalette(palette)
             self.rubberBand.show()
             # print(self.parent.pageAt(self.origin))
             self.selecting = True

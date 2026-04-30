@@ -84,12 +84,10 @@ exe = EXE(
 
 # macOS: Create .app bundle
 if sys.platform == 'darwin':
-    # Check if icon.icns exists, otherwise use None
-    icon_file = 'icon.icns' if Path('icon.icns').exists() else None
     app = BUNDLE(
         exe,
         name='Citation Linker.app',
-        icon=icon_file,
+        icon='icon.icns',
         bundle_identifier='com.n1smm.citationlinker',
         info_plist={
             'NSPrincipalClass': 'NSApplication',

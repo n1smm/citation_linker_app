@@ -9,6 +9,7 @@ from    PySide6.QtWidgets               import  (QWidget,
                                                 QRubberBand,
                                                 QSizePolicy,
                                                 QVBoxLayout)
+from    PySide6.QtGui                   import  QPalette, QColor, QBrush
 from    PySide6.QtPdf                   import  QPdfDocument
 from    PySide6.QtPdfWidgets            import  QPdfView
 
@@ -64,6 +65,13 @@ class PdfViewer(QWidget):
                                  self.zoom_selector,
                                  isOutput
                                  ) # most logic is here
+
+        # set pdfView bg
+        palette = self.view.palette()
+        palette.setColor(QPalette.ColorRole.Window, QColor("lime"))
+        palette.setBrush(QPalette.ColorRole.Dark, QColor("#D8CCAD"))
+        self.view.setAutoFillBackground(True)
+        self.view.setPalette(palette)
         
         
         self.document = QPdfDocument(self)

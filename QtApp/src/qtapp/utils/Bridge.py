@@ -8,7 +8,7 @@ import  sys
 import  subprocess
 import  pymupdf
 import  shutil
-# import  time
+import  time
 import  json
 from    pathlib                         import  Path
 from    PySide6.QtCore                  import  QObject, Signal, Slot
@@ -21,12 +21,15 @@ from    citation_linker.configPaths     import  (ensure_defaults,
 from    citation_linker.multiArticle    import  main as multi_article_main
 from    citation_linker.multiFile       import  main as multi_file_main
 from    citation_linker.citationLinker  import  main as citation_linker_main
+from    citation_linker.io_safe         import  (atomic_replace_save,
+                                                  normalize_path,
+                                                  safe_remove_file)
 
 class Bridge(QObject):
     """
     Interface between Qt UI and citation-linker CLI.
     
-    Parent: CitationLinkerApp(mainWindow)
+    Parent: QObject
     Children: None
     
     Handles:
@@ -37,6 +40,9 @@ class Bridge(QObject):
     """
     config_path_changed = Signal(str)
     linking_finished = Signal(bool, str)
+    log_messages_ready = Signal(list)
+    bib_entries_ready = Signal(list)
+    cit_entries_ready = Signal(list)
 
     def __init__(self, parent=None):
         """Initialize bridge with parent app reference."""
@@ -161,7 +167,7 @@ class Bridge(QObject):
             print(f"Error setting paths: {e}")
 
 
-    def start_linking_process(self, cmd_in=None):
+    def start_linking_process(self, cmd_in=None, skip_ui_prep=False):
         """
         Execute the citation linking process by calling main functions directly.
         
@@ -182,26 +188,44 @@ class Bridge(QObject):
         Returns:
             tuple: (success: bool, output_file_path: str)
         """
-
         from    citation_linker.configLoad      import  config
-        from    citation_linker.appLogger       import  get_logs, reset_log_buffer, get_logger
-        self.parent.document_config.save_config()
-        self.get_input_file_path()
-        base, ext = os.path.splitext(os.path.basename(self.input_file_path))
-        self.delete_files_in_dir(self.input_dir)
-        shutil.copy(self.input_file_path, os.path.join(self.input_dir, base+ext))
-        output_file_base = base + "_linked" + ext
-        output_file_path = os.path.join(self.output_dir, output_file_base)
-        
-        # Set UI mode BEFORE calling get_logger() to ensure proper handler configuration
+        from    citation_linker.appLogger       import  (get_logs, reset_log_buffer, get_logger,
+                                                          get_bib_entries, get_cit_entries,
+                                                          reset_data_buffers)
+
+        output_file_path = ""
+        try:
+            if not skip_ui_prep:
+                self.parent.document_config.save_config()
+                self.get_input_file_path()
+
+            source_file = normalize_path(self.input_file_path)
+            if not source_file.exists() or not source_file.is_file():
+                raise FileNotFoundError(f"Input file not found: {source_file}")
+
+            input_dir = normalize_path(self.input_dir)
+            output_dir = normalize_path(self.output_dir)
+            input_dir.mkdir(parents=True, exist_ok=True)
+            output_dir.mkdir(parents=True, exist_ok=True)
+
+            if not os.access(output_dir, os.W_OK):
+                raise PermissionError(f"Output directory is not writable: {output_dir}")
+
+            self.delete_files_in_dir(input_dir)
+            copied_source = input_dir / source_file.name
+            shutil.copy2(source_file, copied_source)
+            output_file_path = str(output_dir / f"{source_file.stem}_linked{source_file.suffix}")
+        except Exception as e:
+            print(f"Error preparing linking I/O: {e}")
+            self.log_messages = []
+            self.log_messages_ready.emit(self.log_messages)
+            self.linking_finished.emit(False, "")
+            return (False, "")
+
         config["UI"] = ["True"]
-        
-        # Force logger reconfiguration for UI mode by calling get_logger()
-        # This will detect the UI mode change and switch to StringIO handler
         get_logger()
-        
-        # Reset the log buffer to ensure it's clean for this run
         reset_log_buffer()
+        reset_data_buffers()
 
         try:
             # Call the appropriate main function directly
@@ -211,7 +235,7 @@ class Bridge(QObject):
             elif cmd_in == "citation-multi-file":
                 return_code = multi_file_main()
             else:
-                return_code = multi_article_main()
+                return_code = multi_article_main(str(copied_source))
 
             self.log_messages.clear()
             log_output = get_logs()
@@ -221,23 +245,26 @@ class Bridge(QObject):
                 print("first log: ", self.log_messages[0])
             else:
                 print("Warning: No log messages captured")
+            self.log_messages_ready.emit(self.log_messages)
+            self.bib_entries_ready.emit(get_bib_entries())
+            self.cit_entries_ready.emit(get_cit_entries())
         except Exception as e:
             print(f"Error during linking process: {e}")
             import traceback
             traceback.print_exc()
             return_code = 1  # Failure
-            log_messages = []
-            
+            self.log_messages = []
+            self.log_messages_ready.emit(self.log_messages)
+
         self.output_file_path = output_file_path
         print("output file path: ", output_file_path)
-        
+
         success = return_code == 0 and os.path.exists(output_file_path)
         self.linking_finished.emit(success, output_file_path)
         return (success, output_file_path)
 
-
     def parse_log_output(self, log_output):
-        """ parse json to dicts. """
+        """Parse JSON log lines into dictionaries."""
         messages = []
         for line in log_output.strip().split("\n"):
             if line:
@@ -245,7 +272,6 @@ class Bridge(QObject):
                     messages.append(json.loads(line))
                 except json.JSONDecodeError:
                     pass
-
         return messages
 
 
@@ -259,10 +285,13 @@ class Bridge(QObject):
         Args:
             dir: Directory path (currently unused, uses self.input_dir)
         """
-        for filename in os.listdir(self.input_dir):
-            file_path = os.path.join(self.input_dir, filename)
-            if os.path.isfile(file_path):
-                os.remove(file_path)
+        target_dir = normalize_path(dir)
+        if not target_dir.exists():
+            return
+
+        for child in target_dir.iterdir():
+            if child.is_file() or child.is_symlink():
+                safe_remove_file(child)
 
     def save_final_doc(self, pymu_doc):
         """
@@ -273,14 +302,9 @@ class Bridge(QObject):
         Args:
             pymu_doc: PyMuPDF document object to save
         """
-        if pymu_doc:
-            temp_path = self.output_file_path + ".tmp"
-            pymu_doc.save(temp_path)
-            
-            # Replace existing file
-            if os.path.exists(self.output_file_path):
-                os.remove(self.output_file_path)
-            os.rename(temp_path, self.output_file_path)
+        if pymu_doc and self.output_file_path:
+            output_path = normalize_path(self.output_file_path)
+            atomic_replace_save(output_path, lambda temp_path: pymu_doc.save(temp_path))
             print("file saved")
 
     def set_kwargs(self, shell=True):

@@ -28,6 +28,8 @@ class PopupWidget(QWidget):
     def __init__(self, parent=None, position=QPoint(0, 0), buttons=None):
         super().__init__(parent)
         self.setWindowFlags(self.windowFlags() | Qt.Popup)
+        self.setAttribute(Qt.WA_TranslucentBackground)
+        self.setStyleSheet("PopupWidget { background: transparent; }")
         self.move(position)
         self.layout = QVBoxLayout(self)
         self.button_objs = {}
