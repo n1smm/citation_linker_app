@@ -19,6 +19,8 @@ a = Analysis(
     datas=[
         # Include citation_linker data files
         (str(citation_linker_src / 'citation_linker' / 'data'), 'citation_linker/data'),
+        # Include Qt stylesheet, icon, and font assets used via importlib.resources
+        (str(qtapp_src / 'qtapp' / 'styles'), 'qtapp/styles'),
     ],
     hiddenimports=[
         # Add all citation_linker modules
