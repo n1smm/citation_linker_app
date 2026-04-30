@@ -18,7 +18,7 @@ build-backend = "setuptools.build_meta"
 where = ["src"]
 
 [tool.setuptools.package-data]
-qtapp = ["styles/*.qss", "styles/fonts/**/*.ttf", "styles/fonts/**/*.otf", "styles/icons/*.svg"]
+qtapp = ["styles/*.qss", "styles/fonts/**/*.ttf", "styles/fonts/**/*.otf", "styles/icons/*.svg", "styles/icons/*.png"]
 
 [project.scripts]
 citation-linker-app = "qtapp.main:main"
