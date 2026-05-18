@@ -23,8 +23,8 @@ def install_dependencies():
     print("Installing dependencies...")
     subprocess.run([
         sys.executable, '-m', 'pip', 'install',
-        '-e', '../citationLinker',
-        '-e', '../QtApp',
+        '../citationLinker',
+        '../QtApp',
         'pyinstaller',
     ], check=True)
 

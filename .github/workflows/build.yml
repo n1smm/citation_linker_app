@@ -59,7 +59,7 @@ jobs:
           path: build_scripts/dist/Citation Linker.app/
 
   build-linux:
-    runs-on: ubuntu-latest  # Changed from ubuntu-20.04 for better availability
+    runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v4
         with:
