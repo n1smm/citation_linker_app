@@ -210,13 +210,9 @@ class BibStructureEditor(QWidget):
         typ  = self.type_combo.currentText()
         elem = {"type": typ}
         if typ in TYPES_WITH_OPTIONS:
-
-            raw = self.options_input.text()
+            raw = self.options_input.text().strip()
             if raw:
-                if raw.strip():
-                    opts = [o.strip() for o in raw.split("|") if o.strip()]
-                else:
-                    opts = [raw[0]]
+                opts = [o.strip() for o in raw.split("|") if o.strip()]
                 if opts:
                     elem["options"] = opts
         return elem

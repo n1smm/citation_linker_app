@@ -23,8 +23,8 @@ def install_dependencies():
     print("Installing dependencies...")
     subprocess.run([
         sys.executable, '-m', 'pip', 'install',
-        '../citationLinker',
-        '../QtApp',
+        '-e', '../citationLinker',
+        '-e', '../QtApp',
         'pyinstaller',
     ], check=True)
 
@@ -37,7 +37,7 @@ def build_executable():
         '--clean',  # Clean PyInstaller cache
     ], check=True)
 
-    print("\n[OK] Build complete!")
+    print("\n✓ Build complete!")
     print(f"Executable location: dist/")
 
     if sys.platform == 'darwin':
