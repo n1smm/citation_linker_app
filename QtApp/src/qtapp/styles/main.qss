@@ -624,6 +624,21 @@ QInputDialog {
 	background-color: --almond-cream;
 }
 
+/* ===== HELP / INTRODUCTION WINDOW ===== */
+
+QWidget#helpContent QLabel {
+	font-size: 15px;
+}
+
+QLabel#helpTitle {
+	font-weight: bold;
+	text-decoration: underline;
+}
+
+QLabel#helpText {
+	font-weight: normal;
+}
+
 /* ===== PDF VIEWER ===== */
 
 

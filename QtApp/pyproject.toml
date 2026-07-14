@@ -1,6 +1,6 @@
 [project]
 name = "qtapp"
-version = "0.0.5"
+version = "0.1.0"
 description = "Qt app for citation linker"
 authors = [{name = "n1smm", email = "nomail@please.com"}]
 requires-python = ">=3.12"
@@ -19,7 +19,7 @@ build-backend = "setuptools.build_meta"
 where = ["src"]
 
 [tool.setuptools.package-data]
-qtapp = ["styles/*.qss", "styles/fonts/**/*.ttf", "styles/fonts/**/*.otf", "styles/icons/*.svg", "styles/icons/*.png"]
+qtapp = ["styles/*.qss", "styles/fonts/**/*.ttf", "styles/fonts/**/*.otf", "styles/icons/*.svg", "styles/icons/*.png", "data/help/*.json", "data/help/images/*png", "data/help/images/*jpg", "data/help/images/*svg"]
 
 [project.scripts]
 citation-linker-app = "qtapp.main:main"
