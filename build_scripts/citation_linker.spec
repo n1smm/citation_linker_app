@@ -8,6 +8,8 @@ from pathlib import Path
 project_root = Path('..').resolve()
 citation_linker_src = project_root / 'citationLinker' / 'src'
 qtapp_src = project_root / 'QtApp' / 'src'
+icon_ico = Path('icon.ico')
+icon_icns = Path('icon.icns')
 
 a = Analysis(
     [str(qtapp_src / 'qtapp' / 'main.py')],
@@ -79,18 +81,23 @@ exe = EXE(
     target_arch=None,
     codesign_identity=None,
     entitlements_file=None,
-    icon='icon.ico' if sys.platform == 'win32' else None,
+    icon=str(icon_ico) if sys.platform == 'win32' and icon_ico.exists() else None,
 )
 
 # macOS: Create .app bundle
 if sys.platform == 'darwin':
-    app = BUNDLE(
-        exe,
-        name='Citation Linker.app',
-        icon='icon.icns',
-        bundle_identifier='com.n1smm.citationlinker',
-        info_plist={
+    bundle_kwargs = {
+        'name': 'Citation Linker.app',
+        'bundle_identifier': 'com.n1smm.citationlinker',
+        'info_plist': {
             'NSPrincipalClass': 'NSApplication',
             'NSHighResolutionCapable': 'True',
         },
+    }
+    if icon_icns.exists():
+        bundle_kwargs['icon'] = str(icon_icns)
+
+    app = BUNDLE(
+        exe,
+        **bundle_kwargs,
     )

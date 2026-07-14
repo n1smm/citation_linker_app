@@ -56,6 +56,25 @@ The following citation formats are recognized:
 
 ## Bibliography Structure Requirements
 
+## Modular Bibliography Finder (New)
+
+The app now includes a **modular bibliography finder**.  
+This means bibliography parsing is no longer locked to a single fixed structure: you can adapt it to your own source format directly in the app configuration.
+
+### What this enables
+
+- You can define and adjust bibliography delimiters for your documents
+- You can add special-case patterns when your bibliography contains exceptions
+- You can save and reload your custom setup for later use
+
+### Typical workflow for custom bibliography structure
+
+1. Load a document and open the config window.
+2. Use text selections in the viewer to add bibliography delimiters / special cases.
+3. Save the config and run linking with your custom structure.
+
+This makes the tool usable for mixed or non-standard bibliography layouts, not only the default pattern.
+
 ### Standard Bibliography Format (Default)
 Each bibliography entry must follow this structure:
 
