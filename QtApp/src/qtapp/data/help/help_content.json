@@ -217,6 +217,12 @@
 	},
 	{
 		"tab_type": "parser",
+		"data_type": "TEXT",
+		"position": 5,
+		"data": "For advanced adaptations and configuration check the Bibliography editor tab."
+	},
+	{
+		"tab_type": "parser",
 		"data_type": "TITLE",
 		"position": 10,
 		"data": "Citation Formats Recognized"
