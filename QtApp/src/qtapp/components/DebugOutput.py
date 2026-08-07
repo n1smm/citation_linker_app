@@ -233,9 +233,9 @@ class DebugOutput(QWidget):
             others = entry.get("others", [])
             others_str = ", ".join(o for o in others if o and o != "yyy")
             self.bib_table.setItem(row, 0, QTableWidgetItem(str(entry.get("page", ""))))
-            self.bib_table.setItem(row, 1, QTableWidgetItem(str(entry.get("surname", ""))))
-            self.bib_table.setItem(row, 2, QTableWidgetItem(str(entry.get("name", ""))))
-            self.bib_table.setItem(row, 3, QTableWidgetItem(str(entry.get("year", ""))))
+            self.bib_table.setItem(row, 1, QTableWidgetItem(self._display_val(entry.get("surname"))))
+            self.bib_table.setItem(row, 2, QTableWidgetItem(self._display_val(entry.get("name"))))
+            self.bib_table.setItem(row, 3, QTableWidgetItem(self._display_val(entry.get("year"))))
             self.bib_table.setItem(row, 4, QTableWidgetItem(others_str))
             self.bib_table.setItem(row, 5, QTableWidgetItem(str(entry.get("text", ""))))
 
@@ -251,7 +251,14 @@ class DebugOutput(QWidget):
             row = self.cit_table.rowCount()
             self.cit_table.insertRow(row)
             self.cit_table.setItem(row, 0, QTableWidgetItem(str(entry.get("page", ""))))
-            self.cit_table.setItem(row, 1, QTableWidgetItem(str(entry.get("year", ""))))
-            self.cit_table.setItem(row, 2, QTableWidgetItem(str(entry.get("surname", ""))))
-            self.cit_table.setItem(row, 3, QTableWidgetItem(str(entry.get("name", ""))))
+            self.cit_table.setItem(row, 1, QTableWidgetItem(self._display_val(entry.get("year"))))
+            self.cit_table.setItem(row, 2, QTableWidgetItem(self._display_val(entry.get("surname"))))
+            self.cit_table.setItem(row, 3, QTableWidgetItem(self._display_val(entry.get("name"))))
             self.cit_table.setItem(row, 4, QTableWidgetItem(str(entry.get("text", ""))))
+
+    @staticmethod
+    def _display_val(value):
+        """Convert placeholder values to human-readable labels."""
+        if value in ("xxx", "yyy"):
+            return "(not found)"
+        return str(value) if value else ""

@@ -43,6 +43,7 @@ class Bridge(QObject):
     log_messages_ready = Signal(list)
     bib_entries_ready = Signal(list)
     cit_entries_ready = Signal(list)
+    stats_ready = Signal(int, int, int, int, int, int, int)  # valid_cit, total_cit, valid_bib, total_bib, linked, certain_cit, certain_bib
 
     def __init__(self, parent=None):
         """Initialize bridge with parent app reference."""
@@ -191,6 +192,11 @@ class Bridge(QObject):
         from    citation_linker.configLoad      import  config
         from    citation_linker.appLogger       import  (get_logs, reset_log_buffer, get_logger,
                                                           get_bib_entries, get_cit_entries,
+                                                          get_linked_count,
+                                                          get_valid_citation_count,
+                                                          get_valid_bib_count,
+                                                          get_certain_citation_count,
+                                                          get_certain_bib_count,
                                                           reset_data_buffers)
 
         output_file_path = ""
@@ -217,7 +223,7 @@ class Bridge(QObject):
             output_file_path = str(output_dir / f"{source_file.stem}_linked{source_file.suffix}")
         except Exception as e:
             print(f"Error preparing linking I/O: {e}")
-            self.log_messages = []
+            self.log_messages = [{"level": "ERROR", "message": str(e)}]
             self.log_messages_ready.emit(self.log_messages)
             self.linking_finished.emit(False, "")
             return (False, "")
@@ -240,6 +246,29 @@ class Bridge(QObject):
             self.log_messages.clear()
             log_output = get_logs()
             self.log_messages = self.parse_log_output(log_output)
+
+            # Warn if no valid citations, bibliography, or links were found
+            valid_cit = get_valid_citation_count()
+            total_cit = len(get_cit_entries())
+            valid_bib = get_valid_bib_count()
+            total_bib = len(get_bib_entries())
+            linked = get_linked_count()
+            certain_cit = get_certain_citation_count()
+            certain_bib = get_certain_bib_count()
+
+            if total_cit == 0:
+                self.log_messages.append({"level": "WARNING", "message": "No citations found in the document."})
+            elif valid_cit == 0:
+                self.log_messages.append({"level": "WARNING", "message": "No valid citations found (all have missing year or 'xxx' placeholders)."})
+
+            if total_bib == 0:
+                self.log_messages.append({"level": "WARNING", "message": "No bibliography entries found in the document."})
+            elif valid_bib == 0:
+                self.log_messages.append({"level": "WARNING", "message": "No valid bibliography entries found (all have missing year or 'yyy' placeholders)."})
+
+            if linked == 0:
+                self.log_messages.append({"level": "WARNING", "message": "No citations were linked to bibliography entries."})
+
             if self.log_messages:
                 print(f"Captured {len(self.log_messages)} log messages")
                 print("first log: ", self.log_messages[0])
@@ -248,12 +277,21 @@ class Bridge(QObject):
             self.log_messages_ready.emit(self.log_messages)
             self.bib_entries_ready.emit(get_bib_entries())
             self.cit_entries_ready.emit(get_cit_entries())
+            self.stats_ready.emit(
+                valid_cit,
+                total_cit,
+                valid_bib,
+                total_bib,
+                linked,
+                certain_cit,
+                certain_bib,
+            )
         except Exception as e:
             print(f"Error during linking process: {e}")
             import traceback
             traceback.print_exc()
             return_code = 1  # Failure
-            self.log_messages = []
+            self.log_messages = [{"level": "ERROR", "message": str(e)}]
             self.log_messages_ready.emit(self.log_messages)
 
         self.output_file_path = output_file_path

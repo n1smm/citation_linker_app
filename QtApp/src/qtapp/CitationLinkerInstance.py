@@ -22,6 +22,7 @@ from    qtapp.utils.TextHandler         import  TextHandler
 from    qtapp.components.DocConfig      import  DocConfig
 from    qtapp.components.DebugOutput            import  DebugOutput
 from    qtapp.components.BibStructureEditor     import  BibStructureEditor
+from    qtapp.components.LinkingStatsBar         import  LinkingStatsBar
 from    qtapp.utils.Bridge              import  Bridge
 from    citation_linker.io_safe         import  atomic_replace_save, normalize_path, FileLockError
 
@@ -66,6 +67,7 @@ class CitationLinkerInstance(QWidget):
         self.upload_path = ""
         self._viewers_initialized = False
         self._resources_cleaned = False
+        self._custom_saved = False
 
         self.main_layout = QVBoxLayout(self)
         self.horizontal_bar = QHBoxLayout()
@@ -89,6 +91,7 @@ class CitationLinkerInstance(QWidget):
         self.bib_structure_editor = BibStructureEditor(parent=self)
         self.document_config = DocConfig(self, self.bridge)
         self.save_file_manager = FileManager(upload=False, pdf=True, parent=self)
+        self.stats_bar = LinkingStatsBar(self)
 
         self.create_document_env()
         self.create_document_env("output_doc", output=True)
@@ -148,6 +151,9 @@ class CitationLinkerInstance(QWidget):
             self.bridge.bib_entries_ready.connect(self.debug_output.set_bib_entries)
         if hasattr(self.bridge, "cit_entries_ready"):
             self.bridge.cit_entries_ready.connect(self.debug_output.set_cit_entries)
+        if hasattr(self.bridge, "stats_ready"):
+            self.bridge.stats_ready.connect(self.stats_bar.set_stats)
+        self.stats_bar.open_debug_tab.connect(self._on_open_debug_tab)
         self.save_file_manager.process_finished.connect(self.perform_save)
 
 
@@ -175,6 +181,7 @@ class CitationLinkerInstance(QWidget):
 
         self.main_layout.addLayout(self.horizontal_bar, stretch=0)
         self.main_layout.addLayout(self.stacked_layout, stretch=1)
+        self.main_layout.addWidget(self.stats_bar, stretch=0)
         self.filenameLabel.hide()
         self.configToggle.hide()
         self.startProcess.hide()
@@ -294,10 +301,29 @@ class CitationLinkerInstance(QWidget):
             output_file_path: Path to the generated output PDF file
         """
         if not success:
-            QMessageBox.warning(self, "Linking Failed",
-                              "The linking process failed.\n"
-                              "Please check the configuration again\n"
-                              "and ensure all settings are correct.")
+            # Collect error/critical messages from the log buffer
+            error_lines = []
+            for msg in self.bridge.log_messages:
+                level = str(msg.get("level", "")).upper()
+                if level in ("ERROR", "CRITICAL"):
+                    error_lines.append(f"  • {msg.get('message', '')}")
+            error_detail = ""
+            if error_lines:
+                # Show at most 5 errors to avoid an oversized dialog
+                shown = error_lines[:5]
+                if len(error_lines) > 5:
+                    shown.append(f"  … and {len(error_lines) - 5} more (see Debug Output)")
+                error_detail = "\n\nErrors:\n" + "\n".join(shown)
+
+            QMessageBox.warning(
+                self,
+                "Linking Failed",
+                "The linking process failed."
+                f"{error_detail}"
+                "\n\nCheck the Debug Output window for full details."
+                "\nYou can open it via the 'Debug Output' button in the config panel."
+            )
+            self._show_warning_dialog()
             return
         
         for env in self.view_environments:
@@ -317,6 +343,30 @@ class CitationLinkerInstance(QWidget):
             self.switchViewers.setText("input document")
         
         self.refresh_layout()
+        self._show_warning_dialog()
+
+    def _show_warning_dialog(self):
+        """If there are WARNING-level log messages, show them in a notification."""
+        warning_lines = []
+        for msg in self.bridge.log_messages:
+            level = str(msg.get("level", "")).upper()
+            if level == "WARNING":
+                warning_lines.append(f"  • {msg.get('message', '')}")
+        if not warning_lines:
+            return
+
+        shown = warning_lines[:5]
+        if len(warning_lines) > 5:
+            shown.append(f"  … and {len(warning_lines) - 5} more (see Debug Output)")
+        warning_detail = "\n".join(shown)
+
+        QMessageBox.warning(
+            self,
+            "Warnings",
+            "The following warnings were logged during processing:"
+            f"\n\n{warning_detail}"
+            "\n\nCheck the Debug Output window for full details."
+        )
 
     def set_alt_viewer(self, env):
         """
@@ -383,6 +433,7 @@ class CitationLinkerInstance(QWidget):
         if self._linking_thread is not None and self._linking_thread.isRunning():
             return
 
+        self.stats_bar.hide()
         update_data = self.text_handler.get_config_data()
         print(update_data)
         self.document_config.set_data_from_view(update_data)
@@ -513,6 +564,18 @@ class CitationLinkerInstance(QWidget):
         # self.bridge.save_final_doc(pymu_doc)
         
         self.save_file_manager.save_file()
+
+    @Slot(str)
+    def _on_open_debug_tab(self, tab_name):
+        """Open the debug output window and switch to the requested tab."""
+        debug = self.debug_output
+        if tab_name == "bibliography":
+            debug.tabs.setCurrentIndex(1)
+        elif tab_name in ("citations", "linked"):
+            debug.tabs.setCurrentIndex(2)
+        debug.show()
+        debug.raise_()
+        debug.activateWindow()
     
     @Slot()
     def perform_save(self):
@@ -532,6 +595,7 @@ class CitationLinkerInstance(QWidget):
                 atomic_replace_save(target_path, lambda temp_path: pymu_doc.save(temp_path))
                 QMessageBox.information(self, "Success", 
                                       f"File saved to output directory and to:\n{target_path}")
+                self._custom_saved = True
             except FileLockError as e:
                 QMessageBox.critical(
                     self,
@@ -542,6 +606,20 @@ class CitationLinkerInstance(QWidget):
                 QMessageBox.critical(self, "Error", f"Error saving copy to chosen location:\n{e}")
         
         self.save_file_manager.reset_manager(upload=False, pdf=True)
+
+    def has_unsaved_output(self):
+        """Return True if output exists but hasn't been saved to a custom location."""
+        return (bool(self.document_config.output_file_path)
+                and not self._custom_saved)
+
+    def get_output_file_info(self):
+        """Return (display_name, output_path) for unsaved-output prompts."""
+        filename = os.path.basename(self.upload_path) if self.upload_path else "document"
+        return (filename, self.document_config.output_file_path)
+
+    def save_to_custom_location(self):
+        """Trigger the save-file flow programmatically (used from close prompts)."""
+        self.save_file_manager.save_file()
 
     def cleanup_resources(self):
         """Release document resources used by this instance."""
