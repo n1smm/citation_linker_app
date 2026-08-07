@@ -189,23 +189,6 @@ class CitationLinkerApp(QMainWindow):
             self.close_tab_at(index)
         event.accept()
 
-def load_stylesheet(filename):
-    try:
-        path = files('qtapp').joinpath(filename)
-        stylesheet =  path.read_text(encoding="utf-8")
-        
-        colors = {
-            "--dry-sage": "#BBB385",
-            "--pale-oak": "#D8CCAD",
-            "--bone": "#E7D8C1",
-            "--almond-cream": "#F5E4D4",
-            "--ink-black": "#161C23",
-            "--black": "#06080C",
-            "--charcoal-blue": "#3C4048",
-            "--dim-gray": "#6a6d75",
-            "--pale-slate": "#C6C8CF",
-        }
-
 def load_fonts():
     """Load custom fonts from the styles/fonts directory."""
     try:
