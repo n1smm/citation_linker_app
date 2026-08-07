@@ -191,30 +191,47 @@ class BibStructureEditor(QWidget):
     # Internal helpers
     # ─────────────────────────────────────────────
 
+    @staticmethod
+    def _opt_display(opt):
+        """Show a single option value, using [space] for whitespace-only options."""
+        return "[space]" if opt and not opt.strip() else opt
+
     def _structure_summary(self, struct):
         """Short one-line label shown in the structures list."""
         parts = []
         for elem in struct:
             typ = elem.get("type", "?")
             opts = elem.get("options", [])
-            parts.append(f"{typ}({','.join(opts)})" if opts else typ)
+            if typ in TYPES_WITH_OPTIONS:
+                visible = "|".join(self._opt_display(o) for o in opts) if opts else ""
+                parts.append(f"{typ}({visible})")
+            else:
+                parts.append(typ)
         return "  →  ".join(parts) if parts else "(empty)"
 
     def _element_label(self, elem):
         typ  = elem.get("type", "?")
         opts = elem.get("options", [])
-        return f"{typ}  [ {' | '.join(opts)} ]" if opts else typ
+        if typ in TYPES_WITH_OPTIONS:
+            visible = " | ".join(self._opt_display(o) for o in opts) if opts else ""
+            return f"{typ}  [ {visible} ]"
+        return typ
 
     def _elem_from_inputs(self):
         """Build an element dict from the current type/options fields."""
         typ  = self.type_combo.currentText()
         elem = {"type": typ}
         if typ in TYPES_WITH_OPTIONS:
-            raw = self.options_input.text().strip()
-            if raw:
-                opts = [o.strip() for o in raw.split("|") if o.strip()]
-                if opts:
-                    elem["options"] = opts
+            raw_text = self.options_input.text()
+            if raw_text.strip():
+                opts = [o.strip() or o for o in raw_text.split("|") if o.strip() or o]
+            elif raw_text and not raw_text.strip():
+                # only whitespace entered → treat as a single space option
+                opts = [" "]
+            else:
+                opts = []
+            if opts:
+                elem["options"] = opts
         return elem
 
     def _load_elem_into_inputs(self, elem):
