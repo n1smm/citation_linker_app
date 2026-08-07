@@ -4,21 +4,22 @@ Provides the tab host for running independent Citation Linker instances.
 """
 import  os
 import  sys
-from    importlib.resources             import files
-from    PySide6.QtCore                  import Qt
-from    PySide6.QtGui                   import QFontDatabase, QPixmap
-from    PySide6.QtWidgets               import (QApplication,
-                                                QFileDialog,
-                                                QHBoxLayout,
-                                                QLabel,
-                                                QMainWindow,
-                                                QPushButton,
-                                                QTabBar,
-                                                QTabWidget,
-                                                QToolButton,
-                                                QVBoxLayout,
-                                                QWidget)
-from    qtapp.CitationLinkerInstance    import CitationLinkerInstance
+from    importlib.resources                 import files
+from    PySide6.QtCore                      import Qt, Slot
+from    PySide6.QtGui                       import QFontDatabase, QPixmap
+from    PySide6.QtWidgets                   import (QApplication,
+                                                    QFileDialog,
+                                                    QHBoxLayout,
+                                                    QLabel,
+                                                    QMainWindow,
+                                                    QPushButton,
+                                                    QTabBar,
+                                                    QTabWidget,
+                                                    QToolButton,
+                                                    QVBoxLayout,
+                                                    QWidget)
+from    qtapp.CitationLinkerInstance        import CitationLinkerInstance
+from    qtapp.components.IntroductionWindow import  IntroductionWindow
 
 class CitationLinkerApp(QMainWindow):
     """
@@ -30,6 +31,7 @@ class CitationLinkerApp(QMainWindow):
     """
 
     def __init__(self):
+        """Initialize the main application window and all its components."""
         super().__init__()
         self.setWindowTitle("Citation Linker")
 
@@ -38,8 +40,10 @@ class CitationLinkerApp(QMainWindow):
         top_bar = QHBoxLayout()
         landing_layout = QVBoxLayout()
         
+        self.help_window = IntroductionWindow()
 
         self.new_tab_button = QPushButton("New Tab")
+        self.help_button = QPushButton("help")
         self.tab_widget = QTabWidget(self)
         self.tab_widget.setTabsClosable(False)
         self.tab_widget.setMovable(True)
@@ -48,6 +52,7 @@ class CitationLinkerApp(QMainWindow):
         top_bar.setContentsMargins(50, 2, 50, 2)
         top_bar.addWidget(QLabel("Files"))
         top_bar.addStretch()
+        top_bar.addWidget(self.help_button)
         top_bar.addWidget(self.new_tab_button)
 
         self.empty_tabs_placeholder  = QLabel("Citaton Linker App")
@@ -57,18 +62,18 @@ class CitationLinkerApp(QMainWindow):
             self.empty_tabs_icon.setText("Logo unavailable")
         else:
             self.empty_tabs_icon.setPixmap(pixmap)
-            """
-            "--dry-sage": "#BBB385",
-            "--pale-oak": "#D8CCAD",
-            "--bone": "#E7D8C1",
-            "--almond-cream": "#F5E4D4",
-            "--ink-black": "#161C23",
-            "--black": "#06080C",
-            "--charcoal-blue": "#3C4048",
-            "--dim-gray": "#6a6d75",
-            "--pale-slate": "#C6C8CF",
-            """
 
+        """
+        "--dry-sage": "#BBB385",
+        "--pale-oak": "#D8CCAD",
+        "--bone": "#E7D8C1",
+        "--almond-cream": "#F5E4D4",
+        "--ink-black": "#161C23",
+        "--black": "#06080C",
+        "--charcoal-blue": "#3C4048",
+        "--dim-gray": "#6a6d75",
+        "--pale-slate": "#C6C8CF",
+        """
         self.empty_tabs_text = QLabel()
         self.empty_tabs_text.setWordWrap(True)
         self.empty_tabs_text.setMinimumWidth(600)
@@ -94,15 +99,27 @@ class CitationLinkerApp(QMainWindow):
         self.main_layout.addLayout(landing_layout)
         self.main_layout.addWidget(self.tab_widget)
         self.tab_widget.hide()
+        self.help_window.hide()
         self.setCentralWidget(container)
 
+        ### signals connections
         self.new_tab_button.clicked.connect(self.add_tab_from_picker)
+        self.help_button.clicked.connect(self.switch_help_window_state)
 
     def landing_page(self):
         if self.tab_widget.count() == 0:
             self.main_layout.addWidget(self.empty_tabs_placeholder)
 
 
+    @Slot()
+    def switch_help_window_state(self):
+        if self.help_window.isVisible():
+            self.help_window.hide()
+        else:
+            self.help_window.show()
+
+
+    @Slot()
     def add_tab_from_picker(self):
         """Open a file picker and create a tab only when a file is selected."""
         file_path, _ = QFileDialog.getOpenFileName(
@@ -172,6 +189,22 @@ class CitationLinkerApp(QMainWindow):
             self.close_tab_at(index)
         event.accept()
 
+def load_stylesheet(filename):
+    try:
+        path = files('qtapp').joinpath(filename)
+        stylesheet =  path.read_text(encoding="utf-8")
+        
+        colors = {
+            "--dry-sage": "#BBB385",
+            "--pale-oak": "#D8CCAD",
+            "--bone": "#E7D8C1",
+            "--almond-cream": "#F5E4D4",
+            "--ink-black": "#161C23",
+            "--black": "#06080C",
+            "--charcoal-blue": "#3C4048",
+            "--dim-gray": "#6a6d75",
+            "--pale-slate": "#C6C8CF",
+        }
 
 def load_fonts():
     """Load custom fonts from the styles/fonts directory."""

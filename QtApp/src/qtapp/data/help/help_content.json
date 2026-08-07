@@ -1,0 +1,536 @@
+[
+	{
+		"tab_type": "introduction",
+		"data_type": "TITLE",
+		"position": 0,
+		"data": "Citation Linker"
+	},
+	{
+		"tab_type": "introduction",
+		"data_type": "TEXT",
+		"position": 5,
+		"data": "A tool for automatically linking citations to their bibliography entries in PDF documents. Supports Chicago author-date style citations with interactive verification and editing."
+	},
+	{
+		"tab_type": "introduction",
+		"data_type": "TITLE",
+		"position": 10,
+		"data": "Key Features"
+	},
+	{
+		"tab_type": "introduction",
+		"data_type": "TEXT",
+		"position": 15,
+		"data": "• Automatic citation detection and linking\n• Interactive editor with split-view for verification\n• Configurable matching parameters (SOFT_YEAR, DEEP_SEARCH)\n• Manual link creation and adjustment\n• Support for complex citations (multiple authors, page ranges, prefixes)\n• Handles nested parentheses and special cases"
+	},
+	{
+		"tab_type": "introduction",
+		"data_type": "TITLE",
+		"position": 20,
+		"data": "General Workflow"
+	},
+	{
+		"tab_type": "introduction",
+		"data_type": "TEXT",
+		"position": 25,
+		"data": "1. Select a PDF document and open it\n2. Mark the beginning of citations (usually start of text)\n3. Mark the end of citations (after bibliography)\n4. Configure parser settings if needed (optional)\n5. Start the automated linking process\n6. Review results in split view and make adjustments"
+	},
+	{
+		"tab_type": "introduction",
+		"data_type": "TITLE",
+		"position": 30,
+		"data": "System Requirements"
+	},
+	{
+		"tab_type": "introduction",
+		"data_type": "TEXT",
+		"position": 35,
+		"data": "Python: 3.8–3.12 (recommended 3.10–3.12)\nOS: Windows, macOS, Linux\nFormat: PDF documents only\nDependencies: PyMuPDF, PySide6"
+	},
+	{
+		"tab_type": "introduction",
+		"data_type": "TITLE",
+		"position": 40,
+		"data": "Citation Style"
+	},
+	{
+		"tab_type": "introduction",
+		"data_type": "TEXT",
+		"position": 45,
+		"data": "Works with Chicago author-date style citations in parentheses:\n• Basic: (Author Year)\n• With pages: (Author Year: pages)\n• Multiple citations: (Author1 Year; Author2 Year)\nFor detailed citation format examples, see the Parser tab."
+	},
+	{
+		"tab_type": "introduction",
+		"data_type": "TITLE",
+		"position": 45,
+		"data": "Credits & Licence"
+	},
+	{
+		"tab_type": "introduction",
+		"data_type": "TEXT",
+		"position": 45,
+		"data": "This application was created thanks to funding from ZRC-SAZU (Znanstveno raziskovalni Center) from Slovenia. \n to check progress and future development visit the github page: github.com/n1smm/citation_linker_app \n Released under the GNU General Public License v3 (GPL-3.0) "
+	},
+	{
+		"tab_type": "introduction",
+		"data_type": "IMG",
+		"position": 50,
+		"location": "data/help/images/zrc.png"
+	},
+	{
+		"tab_type": "ui",
+		"data_type": "TITLE",
+		"position": 0,
+		"data": "User Interface Guide"
+	},
+	{
+		"tab_type": "ui",
+		"data_type": "TITLE",
+		"position": 5,
+		"data": "Main Window Components"
+	},
+	{
+		"tab_type": "ui",
+		"data_type": "TEXT",
+		"position": 10,
+		"data": "1. File Browser: Browse and select PDF files from your computer\n2. Configuration Panel: Adjust parser settings before processing\n3. Document Viewer: Main area for viewing and marking document boundaries\n4. Status Bar: Shows current page, boundary markers, and action feedback"
+	},
+	{
+		"tab_type": "ui",
+		"data_type": "TITLE",
+		"position": 12,
+		"data": "Key Concepts"
+	},
+	{
+		"tab_type": "ui",
+		"data_type": "TEXT",
+		"position": 13,
+		"data": "Article: A continuous segment of text that the app processes as one unit. You define where it starts and ends. Every article must include a bibliography section. If a publication has multiple chapters or sections sharing a single bibliography at the end, treat the whole publication as one article — the app has no concept of sub-articles.\n\nBibliography Delimiter: A line in the document that marks the exact beginning of the bibliography. The parser uses it to separate the main text from the bibliography entries. It must be set before the parser can run."
+	},
+	{
+		"tab_type": "ui",
+		"data_type": "TITLE",
+		"position": 20,
+		"data": "Configuration Window"
+	},
+	{
+		"tab_type": "ui",
+		"data_type": "TEXT",
+		"position": 25,
+		"data": "Adjust the following options before linking:\n• SOFT_YEAR: Add ±1 year tolerance to year matching\n• DEEP_SEARCH: Enable fuzzy author name matching\n• SEARCH_EXCLUDE: List words to exclude from deep search\n• ALTERNATIVE_BIB: Support 'Year. Title' bibliography format\nDefaults are suitable for most documents."
+	},
+	{
+		"tab_type": "ui",
+		"data_type": "TITLE",
+		"position": 30,
+		"data": "Document Navigation"
+	},
+	{
+		"tab_type": "ui",
+		"data_type": "TEXT",
+		"position": 35,
+		"data": "• Scroll or use arrow keys to navigate pages\n• Use page number input to jump to specific page\n• Zoom in/out to better see text details\n• Use Page Up/Down for faster navigation"
+	},
+	{
+		"tab_type": "ui",
+		"data_type": "TITLE",
+		"position": 40,
+		"data": "Marking Boundaries"
+	},
+	{
+		"tab_type": "ui",
+		"data_type": "TEXT",
+		"position": 45,
+		"data": "Set the start and end page of the article you want to process:\n1. Navigate to the first page of the article (where the text begins)\n2. Mark it as the article start\n3. Navigate to the last page (after the bibliography ends)\n4. Mark it as the article end\n\nThe marked range must include both the main text and the full bibliography. The bibliography delimiter (see below) tells the parser exactly where the bibliography begins within this range."
+	},
+	{
+		"tab_type": "ui",
+		"data_type": "TITLE",
+		"position": 47,
+		"data": "Bibliography Delimiter"
+	},
+	{
+		"tab_type": "ui",
+		"data_type": "TEXT",
+		"position": 48,
+		"data": "The bibliography delimiter is required for the parser to work. It is a line in the document that marks where the bibliography begins.\n\nHow matching works:\n• The delimiter must match a complete line — a word or phrase inside a longer line will not match\n• Matching is exact and case-sensitive\n• The line must be unique in the article: if the same line appears earlier in the article text, it will not be used as a delimiter\n\nExample:\nDelimiter set to: \"Bibliography\"\n✓ Matches a line that reads exactly \"Bibliography\"\n✗ Does not match \"See bibliography at the end\" (the delimiter is part of a longer line)\n✗ Does not match \"bibliography\" (different case)\n\nHow to set it: select the bibliography heading line in the document viewer (click and drag), then assign it as the bibliography delimiter using the context menu or the relevant button.\n\nTip: use a heading that appears only once in the article — for example \"Bibliography\", \"Literatura\", or \"References\"."
+	},
+	{
+		"tab_type": "ui",
+		"data_type": "TITLE",
+		"position": 50,
+		"data": "Creating Selections"
+	},
+	{
+		"tab_type": "ui",
+		"data_type": "TEXT",
+		"position": 55,
+		"data": "Left click and drag to select text in the document. Selections are used for:\n• Setting the bibliography delimiter (select the bibliography heading line, then assign it — see Bibliography Delimiter section above)\n• Defining special cases and exceptions\n• Creating custom annotations\nRight-click on a selection to delete it."
+	},
+	{
+		"tab_type": "ui",
+		"data_type": "TITLE",
+		"position": 60,
+		"data": "Keyboard & Mouse Actions"
+	},
+	{
+		"tab_type": "ui",
+		"data_type": "TEXT",
+		"position": 65,
+		"data": "Space: Toggle citation/bibliography boundary marker\nLeft click + drag: Create text selection\nRight click: Delete link or annotation\nCtrl+Z: Undo last action\nCtrl+S: Save configuration"
+	},
+	{
+		"tab_type": "ui",
+		"data_type": "TITLE",
+		"position": 75,
+		"data": "Split View (Linking Mode)"
+	},
+	{
+		"tab_type": "ui",
+		"data_type": "TEXT",
+		"position": 80,
+		"data": "After linking starts, the split view opens:\n• Left side: Shows the main text with detected citations (highlighted)\n• Right side: Shows bibliography entries for verification\n• Click a citation to jump to its matched bibliography entry\n• Right-click to edit or remove links\n• Left-click 'Add Link' in left viewer, then 'Add Destination' in right viewer to manually link"
+	},
+	{
+		"tab_type": "ui",
+		"data_type": "TITLE",
+		"position": 85,
+		"data": "Tips & Tricks"
+	},
+	{
+		"tab_type": "ui",
+		"data_type": "TEXT",
+		"position": 90,
+		"data": "• Save your configuration after setting it up for future use\n• For OCR-scanned documents, enable SOFT_YEAR and DEEP_SEARCH\n• Use SEARCH_EXCLUDE to prevent matching common abbreviations\n• Start with default settings on clean documents for best accuracy\n• Review all automatic links before saving the output"
+	},
+	{
+		"tab_type": "parser",
+		"data_type": "TITLE",
+		"position": 0,
+		"data": "Parser Reference"
+	},
+	{
+		"tab_type": "parser",
+		"data_type": "TEXT",
+		"position": 5,
+		"data": "The parser is designed to recognize Chicago author-date style citations. It automatically extracts citations from the document and attempts to match them with bibliography entries."
+	},
+	{
+		"tab_type": "parser",
+		"data_type": "TEXT",
+		"position": 5,
+		"data": "For advanced adaptations and configuration check the Bibliography editor tab."
+	},
+	{
+		"tab_type": "parser",
+		"data_type": "TITLE",
+		"position": 10,
+		"data": "Citation Formats Recognized"
+	},
+	{
+		"tab_type": "parser",
+		"data_type": "TEXT",
+		"position": 15,
+		"data": "Standard formats:\n• (Surname Year) → (Trocki 2008)\n• (Surname Year: pages) → (Adorno 1966: 353–354)\n• Multiple authors: (Surname et al. Year: pages) → (Deckard et al. 2015: 17–22)\n• Multiple citations: (Author1 Year; Author2 Year) → (Trocki 2008; Davidson 2019)\n• Nested parentheses: (Pascale Casanova [2004])\n• With prefixes: (cf. Author Year), (prim. Author Year), (nav. po Author Year)"
+	},
+	{
+		"tab_type": "parser",
+		"data_type": "TITLE",
+		"position": 25,
+		"data": "Complex Citation Examples"
+	},
+	{
+		"tab_type": "parser",
+		"data_type": "TEXT",
+		"position": 30,
+		"data": "Advanced cases the parser handles:\n• Quote before citation: (»nach Auschwitz ein Gedicht zu schreiben, ist barbarisch«; Adorno 1969: 31)\n• Author in text: Peter V. Zima (2015: xi, 2–3, passim)\n• Repeated work: (nav. d.: 17–22) - refers to previously cited work\n• Multiple years same author: (Kermauner 1970: 93; 2013: 219)\n• Multiple works together: Must be separated by semicolons"
+	},
+	{
+		"tab_type": "parser",
+		"data_type": "TITLE",
+		"position": 35,
+		"data": "Bibliography Format Requirements"
+	},
+	{
+		"tab_type": "parser",
+		"data_type": "TEXT",
+		"position": 40,
+		"data": "Standard format (comma-separated):\nSurname, Name, Year: Title. Publisher information.\n\nExamples:\n• Adorno, Theodor W., 1969: Prismen: Kulturkritik und Gesellschaft. Berlin: Suhrkamp Verlag.\n• Trocki, Carl A., 2008: The Strait of Malacca. New York: Columbia University Press.\n\nThe parser requires: Surname, Name, Year (separated by commas) or Year followed by colon or period."
+	},
+	{
+		"tab_type": "parser",
+		"data_type": "TITLE",
+		"position": 45,
+		"data": "Alternative Bibliography Format"
+	},
+	{
+		"tab_type": "parser",
+		"data_type": "TEXT",
+		"position": 50,
+		"data": "When ALTERNATIVE_BIB is enabled, the parser also recognizes:\nYear. Title and rest of entry\n\nExample:\n1964. Slovenska matica\n\nThis format is useful for sources where the year appears first. Both formats can coexist in the same bibliography."
+	},
+	{
+		"tab_type": "parser",
+		"data_type": "TITLE",
+		"position": 55,
+		"data": "SOFT_YEAR Configuration"
+	},
+	{
+		"tab_type": "parser",
+		"data_type": "TEXT",
+		"position": 60,
+		"data": "When enabled (default: True), SOFT_YEAR:\n• Adds ±1 year tolerance to year matching\n• Recognizes year ranges (1998-2004)\n• Accounts for potential OCR errors or typos\n\nExample:\nCitation: (Smith 2010)\nBibliography: Smith, John, 2009: ...\nResult: MATCH (within ±1 year tolerance)\n\nWarning: May create false positive links in some documents."
+	},
+	{
+		"tab_type": "parser",
+		"data_type": "TITLE",
+		"position": 65,
+		"data": "DEEP_SEARCH Configuration"
+	},
+	{
+		"tab_type": "parser",
+		"data_type": "TEXT",
+		"position": 70,
+		"data": "When enabled (default: True), DEEP_SEARCH:\n• More permissive author name matching\n• Matches partial strings in author names\n• Useful for compound surnames (Van der Waals, Casanova)\n• Checks co-authors field\n\nExample:\nCitation: (Waals 2005)\nBibliography: Van der Waals, Johannes, 2005: ...\nResult: MATCH with DEEP_SEARCH enabled\n\nWarning: May match false positives - combine with SEARCH_EXCLUDE."
+	},
+	{
+		"tab_type": "parser",
+		"data_type": "TITLE",
+		"position": 75,
+		"data": "SEARCH_EXCLUDE Configuration"
+	},
+	{
+		"tab_type": "parser",
+		"data_type": "TEXT",
+		"position": 80,
+		"data": "Words to exclude from DEEP_SEARCH matching.\n\nDefault values: \"ur\", \"Ur\", \"Ur.\"\n(these are editor markers and abbreviations)\n\nExample:\nIf your document has many entries with 'ur' (Slovenian: 'urednik'=editor), add it to SEARCH_EXCLUDE to prevent false matches.\n\nFormat in config: SEARCH_EXCLUDE=\"word1\", \"word2\", \"word3\""
+	},
+	{
+		"tab_type": "parser",
+		"data_type": "TITLE",
+		"position": 85,
+		"data": "Citation Matching Rules"
+	},
+	{
+		"tab_type": "parser",
+		"data_type": "TEXT",
+		"position": 90,
+		"data": "For successful automatic linking:\n• Author surname must be CAPITALIZED (lowercase surnames are not detected)\n• Year must match bibliography exactly (unless SOFT_YEAR is enabled)\n• For citations like (Author [Year]), surname must immediately precede year\n• No line breaks in surnames (Wolfgang → Wol-\nfgang fails)\n• Author declension must match bibliography exactly\n• First occurrence of citation determines the bibliography entry"
+	},
+	{
+		"tab_type": "parser",
+		"data_type": "TITLE",
+		"position": 95,
+		"data": "Important Limitations"
+	},
+	{
+		"tab_type": "parser",
+		"data_type": "TEXT",
+		"position": 100,
+		"data": "Critical constraints:\n• Only works with PDF documents\n• Only supports Chicago author-date style\n• Bibliography must be located at the end of the document\n• Processes one document at a time\n• Author surname must be capitalized\n• No line breaks in surnames\n• No declension of author names (surname must match exactly)\n• Citation year must match bibliography year exactly (unless SOFT_YEAR enabled)"
+	},
+	{
+		"tab_type": "parser",
+		"data_type": "TITLE",
+		"position": 105,
+		"data": "What WORKS - Citation Examples"
+	},
+	{
+		"tab_type": "parser",
+		"data_type": "TEXT",
+		"position": 110,
+		"data": "✓ WORKS: (Trocki 2008)\n✓ WORKS: (Adorno 1966: 353–354)\n✓ WORKS: (Deckard et al. 2015: 17–22, 49–56)\n✓ WORKS: (Trocki 2008: 7–8; Davidson 2019a: 24–28)\n✓ WORKS: (prim. Zima 2015: 2–4)\n✓ WORKS: (nav. po Davidson 2019b: 180)\n✓ WORKS: Peter V. Zima (2015: xi, 2–3)\n✓ WORKS: (Pascale Casanova [2004])\n✓ WORKS: (»quote text«; Adorno 1969: 31)\n✓ WORKS: (Kermauner 1970: 93; 2013: 219)\n✓ WORKS: (nav. d.: 17–22) [refers to last cited work]"
+	},
+	{
+		"tab_type": "parser",
+		"data_type": "TITLE",
+		"position": 115,
+		"data": "What DOESN'T WORK - Citations That Fail"
+	},
+	{
+		"tab_type": "parser",
+		"data_type": "TEXT",
+		"position": 120,
+		"data": "✗ FAILS: (trocki 2008) - lowercase surname not detected\n✗ FAILS: (Wol-fgang Iser 1988) - line break in surname fails\n✗ FAILS: (Author 1999-2000) - year mismatch, use SOFT_YEAR or match exactly\n✗ FAILS: (Iser [1988]) - brackets around year without surname immediately before\n✗ FAILS: (Smith, John 2010) - full name format not recognized\n✗ FAILS: (David Davidson 2010) - first name before surname fails\n✗ FAILS: see Frank 2002: 8–40 - unparenthesized citations unreliable\n✗ FAILS: (Zima [2015: 2-3]) - punctuation inside brackets confuses parser\n✗ FAILS: (Author 1990') - with apostrophe or special marks on year\n✗ FAILS: (Müller 2005) when bibliography has (Müller 2005) - accents may cause mismatches in some PDFs"
+	},
+	{
+		"tab_type": "parser",
+		"data_type": "TITLE",
+		"position": 125,
+		"data": "Bibliography Format - What WORKS"
+	},
+	{
+		"tab_type": "parser",
+		"data_type": "TEXT",
+		"position": 130,
+		"data": "✓ WORKS:\nAdorno, Theodor W., 1969: Prismen. Berlin: Suhrkamp Verlag.\n\n✓ WORKS:\nAdorno, Theodor W., 1969. Prismen. Berlin: Suhrkamp Verlag.\n\n✓ WORKS (with ALTERNATIVE_BIB):\n1964. Slovenska matica Ljubljana.\n\n✓ WORKS:\nTrocki, Carl A., 2008: The Strait of Malacca. New York: Columbia University Press."
+	},
+	{
+		"tab_type": "parser",
+		"data_type": "TITLE",
+		"position": 135,
+		"data": "Bibliography Format - What DOESN'T WORK"
+	},
+	{
+		"tab_type": "parser",
+		"data_type": "TEXT",
+		"position": 140,
+		"data": "✗ FAILS:\n1969 Adorno, Theodor W. - year before name breaks format\n\n✗ FAILS:\nAdorno, Theodor W. 1969 - missing colon or period after year\n\n✗ FAILS:\nTheodor W. Adorno, 1969 - first name before surname\n\n✗ FAILS:\nAdorno (1969) - parenthetical format not recognized\n\n✗ FAILS:\nAdorno Theodor W. 1969 - missing commas\n\n✗ FAILS:\nAdorno,T.W.,1969 - abbreviated first names may not match\n\n✗ FAILS (without ALTERNATIVE_BIB):\n1964. Slovenska matica - year-first format rejected"
+	},
+	{
+		"tab_type": "parser",
+		"data_type": "TITLE",
+		"position": 145,
+		"data": "Case Sensitivity - Critical Examples"
+	},
+	{
+		"tab_type": "parser",
+		"data_type": "TEXT",
+		"position": 150,
+		"data": "Citation: (Smith 2010)\nBibliography: Smith, John, 2010: ...\nResult: ✓ MATCHES\n\nCitation: (smith 2010) ← lowercase s\nBibliography: Smith, John, 2010: ...\nResult: ✗ NO MATCH - lowercase surname not detected!\n\nCitation: (SMITH 2010) ← all caps\nBibliography: Smith, John, 2010: ...\nResult: ✗ NO MATCH - all caps not standard format"
+	},
+	{
+		"tab_type": "parser",
+		"data_type": "TITLE",
+		"position": 155,
+		"data": "Common Mistakes & Solutions"
+	},
+	{
+		"tab_type": "parser",
+		"data_type": "TEXT",
+		"position": 160,
+		"data": "Problem: Citations not detected\n• Solution: Ensure surname is CAPITALIZED and matches bibliography exactly\n\nProblem: Wrong matches created\n• Solution: Disable DEEP_SEARCH for cleaner documents, use SEARCH_EXCLUDE for common abbreviations\n\nProblem: 'nav. d.' citations not linked\n• Solution: These refer to the previously cited work - the parser handles this automatically\n\nProblem: Links fail after PDF extraction\n• Solution: Use SOFT_YEAR=True for OCR-scanned documents\n\nProblem: Surname with hyphens fails\n• Solution: Ensure no line breaks in the PDF - reformat if necessary"
+	},
+	{
+		"tab_type": "parser",
+		"data_type": "TITLE",
+		"position": 165,
+		"data": "Best Practices"
+	},
+	{
+		"tab_type": "parser",
+		"data_type": "TEXT",
+		"position": 170,
+		"data": "• Ensure bibliography entries follow: Surname, Name, Year: Title. Publisher.\n• Keep author names and years EXACTLY the same between citations and bibliography\n• Use SOFT_YEAR=False and DEEP_SEARCH=False for maximum precision if your document is clean\n• Enable DEEP_SEARCH and SOFT_YEAR for OCR-scanned documents with potential errors\n• Always review automatic links before saving output\n• Test with a small section first before processing entire document\n• Verify capitalization matches between citations and bibliography\n• Check for line breaks in surnames that may split names across pages"
+	},
+	{
+		"tab_type": "bib_editor",
+		"data_type": "TITLE",
+		"position": 0,
+		"data": "Bibliography Structure Editor"
+	},
+	{
+		"tab_type": "bib_editor",
+		"data_type": "TEXT",
+		"position": 5,
+		"data": "Advanced tool for customizing how the parser recognizes bibliography entry formats. Use this when your documents have non-standard bibliography layouts that the default parser doesn't handle well."
+	},
+	{
+		"tab_type": "bib_editor",
+		"data_type": "TITLE",
+		"position": 10,
+		"data": "What Are Bibliography Structures?"
+	},
+	{
+		"tab_type": "bib_editor",
+		"data_type": "TEXT",
+		"position": 15,
+		"data": "A bibliography structure describes the layout and order of elements in a single bibliography entry.\n\nExample:\nAdorno, Theodor W., 1969: Prismen: Kulturkritik und Gesellschaft.\n\nDecomposes to:\nSURNAME → SEPARATOR(,) → NAME → SEPARATOR(,) → YEAR → SEPARATOR(:) → TITLE\n\nYou can define multiple structures; the parser tries each one and picks the best match."
+	},
+	{
+		"tab_type": "bib_editor",
+		"data_type": "TITLE",
+		"position": 20,
+		"data": "Element Types"
+	},
+	{
+		"tab_type": "bib_editor",
+		"data_type": "TEXT",
+		"position": 25,
+		"data": "SURNAME: Author's last name (required for matching)\nNAME: Author's first name or initials\nYEAR: Publication year (required for matching)\nTITLE: Work title or description\nSEPARATOR: Delimiters between elements (comma, colon, period, etc.)\nEXTRA_CHAR: Punctuation marks like parentheses or brackets\nOTHER_AUTHORS: Indicators for multiple authors (\"et al.\", \"and\", etc.)\nIGNORE: Skip this element (useful for unwanted prefixes or suffixes)"
+	},
+	{
+		"tab_type": "bib_editor",
+		"data_type": "TITLE",
+		"position": 30,
+		"data": "Element Types with Options"
+	},
+	{
+		"tab_type": "bib_editor",
+		"data_type": "TEXT",
+		"position": 35,
+		"data": "Some element types accept multiple options separated by pipe symbols (|):\n\nSEPARATOR: Specify which delimiters to match\n  Example: , | : | .\n  Matches comma, colon, or period\n\nEXTRA_CHAR: Specify which punctuation marks\n  Example: ( | )\n  Matches opening or closing parenthesis\n\nOTHER_AUTHORS: Specify author indicators\n  Example: et al. | and | in\n  Matches \"et al.\" or \"and\" or \"in\""
+	},
+	{
+		"tab_type": "bib_editor",
+		"data_type": "TITLE",
+		"position": 40,
+		"data": "Editor Interface"
+	},
+	{
+		"tab_type": "bib_editor",
+		"data_type": "TEXT",
+		"position": 45,
+		"data": "Top Section:\n• Existing Structures list - shows all defined structures\n• New Structure button - create a new structure definition\n• Remove Structure button - delete selected structure\n\nBottom-Left:\n• Elements list - shows elements in current structure in order\n• Move Up/Down buttons - reorder elements\n• Remove button - delete element\n\nBottom-Right:\n• Type dropdown - select element type\n• Options field - enter separator characters or keywords\n• Add Element button - append new element\n• Update Element button - modify selected element\n• Save Structure button - commit changes"
+	},
+	{
+		"tab_type": "bib_editor",
+		"data_type": "TITLE",
+		"position": 55,
+		"data": "Example Structures"
+	},
+	{
+		"tab_type": "bib_editor",
+		"data_type": "TEXT",
+		"position": 60,
+		"data": "Standard Chicago Format:\nSURNAME → SEPARATOR(,) → NAME → SEPARATOR(,) → YEAR → SEPARATOR(:) → TITLE\nMatches: Adorno, Theodor W., 1969: Prismen: Kulturkritik und Gesellschaft.\n\nAlternative Format (Year First):\nYEAR → SEPARATOR(.) → TITLE\nMatches: 1964. Slovenska matica\n\nFormat with Parenthetical Year:\nSURNAME → SEPARATOR(,) → NAME → EXTRA_CHAR(() → YEAR → EXTRA_CHAR())\nMatches: Smith, John (2020)"
+	},
+	{
+		"tab_type": "bib_editor",
+		"data_type": "TITLE",
+		"position": 65,
+		"data": "Creating a New Structure"
+	},
+	{
+		"tab_type": "bib_editor",
+		"data_type": "TEXT",
+		"position": 70,
+		"data": "1. Click 'New Structure' to create an empty structure\n2. In the Type dropdown, select the first element type\n3. If the type has options (SEPARATOR, EXTRA_CHAR, OTHER_AUTHORS), enter values in Options field using | as separator\n4. Click 'Add Element' to append to the structure\n5. Repeat steps 2-4 for each element in your bibliography format\n6. Use Move Up/Down to arrange elements if needed\n7. Click 'Save Structure' to finalize\n8. Test by enabling this structure in the main parser configuration"
+	},
+	{
+		"tab_type": "bib_editor",
+		"data_type": "TITLE",
+		"position": 75,
+		"data": "Editing Existing Structures"
+	},
+	{
+		"tab_type": "bib_editor",
+		"data_type": "TEXT",
+		"position": 80,
+		"data": "1. Click a structure in the 'Existing Structures' list to load it\n2. The elements appear in the Elements list\n3. Click an element to select it and load its settings into the Type/Options fields\n4. Modify the Type or Options as needed\n5. Click 'Update Element' to save changes\n6. Or click 'Remove' to delete the element\n7. Use Move Up/Down to reorder elements\n8. Click 'Save Structure' to commit all changes"
+	},
+	{
+		"tab_type": "bib_editor",
+		"data_type": "TITLE",
+		"position": 85,
+		"data": "Best Practices"
+	},
+	{
+		"tab_type": "bib_editor",
+		"data_type": "TEXT",
+		"position": 90,
+		"data": "• Always start with SURNAME and YEAR as required match points\n• Ensure element order matches your actual bibliography format exactly\n• Use SEPARATOR to mark delimiters between elements\n• Include all visible delimiters in the structure (commas, colons, periods)\n• If entries vary slightly, create multiple alternative structures\n• Test with a sample bibliography before processing entire document\n• Leave unnecessary spacing out of options - the parser handles whitespace\n• For similar formats, reorder and modify existing structures rather than creating new ones"
+	},
+	{
+		"tab_type": "bib_editor",
+		"data_type": "TITLE",
+		"position": 95,
+		"data": "Troubleshooting"
+	},
+	{
+		"tab_type": "bib_editor",
+		"data_type": "TEXT",
+		"position": 100,
+		"data": "Problem: Parser doesn't recognize bibliography entries\n• Solution: Verify element order matches your actual bibliography exactly\n• Check that you included all delimiters (commas, colons, periods)\n• Ensure SURNAME and YEAR elements are present\n\nProblem: Wrong entries matched\n• Solution: The structure may be too permissive - add more SEPARATOR elements\n• Create a new alternative structure for different entry formats\n• Use IGNORE to skip unexpected prefixes or suffixes\n\nProblem: Changes not applied\n• Solution: Click 'Save Structure' to finalize edits\n• Reload the configuration in the main parser after saving"
+	}
+]

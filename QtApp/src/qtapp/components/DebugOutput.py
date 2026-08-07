@@ -34,15 +34,15 @@ class DebugOutput(QWidget):
 
         self.tabs = QTabWidget()
 
-        # ── log tab ──────────────────────────────────
+        #  log tab 
         self.level_selector = QComboBox()
         self.table = QTableWidget(0, 5)
         self.full_message = QTextEdit()
 
-        # ── bib tab ───────────────────────────────────
+        #  bib tab 
         self.bib_table = QTableWidget(0, 6)
 
-        # ── cit tab ───────────────────────────────────
+        #  cit tab 
         self.cit_table = QTableWidget(0, 5)
 
         self._init_ui()
@@ -50,9 +50,9 @@ class DebugOutput(QWidget):
         self.table.cellClicked.connect(self.show_full_message)
         self.level_selector.currentTextChanged.connect(self.populate_table)
 
-    # ─────────────────────────────────────────────────────
+    #  ----------------
     # UI construction
-    # ─────────────────────────────────────────────────────
+    #  -----------------
 
     def _init_ui(self):
         main_layout = QVBoxLayout(self)
@@ -151,9 +151,9 @@ class DebugOutput(QWidget):
         layout.addWidget(self.cit_table)
         return widget
 
-    # ─────────────────────────────────────────────────────
+    # -----------------
     # Slots — log tab
-    # ─────────────────────────────────────────────────────
+    # ----------------
 
     @Slot(int, int)
     def show_full_message(self, row, column):
@@ -219,9 +219,9 @@ class DebugOutput(QWidget):
             self.table.setItem(row, 3, page_article_item)
             self.table.setItem(row, 4, page_doc_item)
 
-    # ─────────────────────────────────────────────────────
+    # ------------------------
     # Slots — bibliography tab
-    # ─────────────────────────────────────────────────────
+    # ------------------------
 
     @Slot(list)
     def set_bib_entries(self, entries):
@@ -239,9 +239,9 @@ class DebugOutput(QWidget):
             self.bib_table.setItem(row, 4, QTableWidgetItem(others_str))
             self.bib_table.setItem(row, 5, QTableWidgetItem(str(entry.get("text", ""))))
 
-    # ─────────────────────────────────────────────────────
+    # ---------------------
     # Slots — citations tab
-    # ─────────────────────────────────────────────────────
+    # ---------------------
 
     @Slot(list)
     def set_cit_entries(self, entries):

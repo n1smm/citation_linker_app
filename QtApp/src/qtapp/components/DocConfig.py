@@ -329,6 +329,7 @@ class DocConfig(QWidget):
         change_btn = QPushButton("Change")
         up_btn = QPushButton("▲")
         down_btn= QPushButton("▼")
+        clear_btn = QPushButton("Clear")
         up_btn.setMaximumWidth(30)
         down_btn.setMaximumWidth(30)
 
@@ -371,7 +372,11 @@ class DocConfig(QWidget):
                 list_widget.insertItem(current + 1, item)
                 list_widget.setCurrentRow(current + 1)
                 self.list_widget_changed.emit(field_name, list_widget)
-            
+
+        def clear_all():
+            if list_widget.count() > 0:
+                list_widget.clear()
+                self.list_widget_changed.emit(field_name, list_widget)
 
 
         add_btn.clicked.connect(add_item)
@@ -379,12 +384,14 @@ class DocConfig(QWidget):
         change_btn.clicked.connect(change_item)
         up_btn.clicked.connect(move_up)
         down_btn.clicked.connect(move_down)
+        clear_btn.clicked.connect(clear_all)
 
         btn_layout.addWidget(add_btn)
         btn_layout.addWidget(remove_btn)
         btn_layout.addWidget(change_btn)
         btn_layout.addWidget(up_btn)
         btn_layout.addWidget(down_btn)
+        btn_layout.addWidget(clear_btn)
 
         list_layout.addLayout(btn_layout)
 

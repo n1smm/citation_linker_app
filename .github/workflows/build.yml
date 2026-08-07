@@ -1,0 +1,117 @@
+name: Build Executables
+
+permissions:
+  contents: write  # Required for creating releases
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      create_release:
+        description: 'Create a GitHub Release'
+        required: false
+        default: false
+        type: boolean
+      release_tag:
+        description: 'Release tag name (e.g., v1.0.0)'
+        required: false
+        default: 'manual-build'
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: 'recursive'
+      - uses: actions/setup-python@v4
+        with:
+          python-version: '3.12'
+      - name: Build
+        run: |
+          cd build_scripts
+          python build.py
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-exe
+          path: build_scripts/dist/*.exe
+
+  build-macos:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: 'recursive'
+      - uses: actions/setup-python@v4
+        with:
+          python-version: '3.12'
+      - name: Build
+        run: |
+          cd build_scripts
+          python3 build.py
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: macos-app
+          path: build_scripts/dist/Citation Linker.app/
+
+  build-linux:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: 'recursive'
+      - uses: actions/setup-python@v4
+        with:
+          python-version: '3.12'
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libxcb-xinerama0 libxcb-cursor0
+      - name: Build
+        run: |
+          cd build_scripts
+          python3 build.py
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: linux-bin
+          path: build_scripts/dist/Citation Linker
+
+  create-release:
+    needs: [build-windows, build-macos, build-linux]
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/') || (github.event_name == 'workflow_dispatch' && inputs.create_release)
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+      
+      - name: List downloaded artifacts
+        run: |
+          echo "Downloaded artifacts:"
+          ls -R
+      
+      - name: Package macOS app
+        run: |
+          if [ -d "macos-app" ]; then
+            cd macos-app
+            zip -r ../Citation-Linker-macOS.zip .
+            cd ..
+          fi
+        
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ github.event.inputs.release_tag || github.ref_name }}
+          name: Release ${{ github.event.inputs.release_tag || github.ref_name }}
+          draft: ${{ github.event_name == 'workflow_dispatch' }}
+          fail_on_unmatched_files: false
+          files: |
+            windows-exe/*.exe
+            linux-bin/*
+            Citation-Linker-macOS.zip
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
