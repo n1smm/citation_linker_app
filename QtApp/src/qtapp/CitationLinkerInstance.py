@@ -383,8 +383,15 @@ class CitationLinkerInstance(QWidget):
         start_page = 0
         for i in range(article_list.count()):
             if i == 0:
-                tokens = article_list.item(i).text().split(":")
-                start_page = int(tokens[-1]) - 1
+                text = article_list.item(i).text()
+                parts = text.split(":")
+                if len(parts) >= 2:
+                    try:
+                        start_page = int(parts[-1]) - 1
+                    except (ValueError, TypeError):
+                        print(f"Warning: Non-numeric ARTICLE_BREAKS entry '{text}' — using page 0")
+                else:
+                    print(f"Warning: Malformed ARTICLE_BREAKS entry '{text}' — using page 0")
                 break
         viewer.navigator.jump_to(start_page)
         for env in self.view_environments:

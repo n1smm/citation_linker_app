@@ -800,13 +800,19 @@ class DocConfig(QWidget):
         """Convert one-based string list to zero-based article cache."""
         cache = []
         for i in range(data.count()):
-            tokens = data.item(i).text().split(":")
-            # transform from 1 index to 0 index  count
-            pair = {
-                    "first": int(tokens[0]) -1,
-                    "last": int(tokens[1]) -1
-                    }
-            cache.append(pair)
+            text = data.item(i).text()
+            parts = text.split(":")
+            if len(parts) != 2:
+                print(f"Warning: Skipping malformed ARTICLE_BREAKS entry '{text}' — expected 'start:end'")
+                continue
+            try:
+                pair = {
+                    "first": int(parts[0]) - 1,
+                    "last": int(parts[1]) - 1
+                }
+                cache.append(pair)
+            except (ValueError, TypeError):
+                print(f"Warning: Skipping non-numeric ARTICLE_BREAKS entry '{text}'")
         return cache
 
     def set_data_from_view(self, config_data=None):
