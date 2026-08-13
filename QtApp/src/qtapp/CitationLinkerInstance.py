@@ -149,8 +149,10 @@ class CitationLinkerInstance(QWidget):
             self.bridge.log_messages_ready.connect(self.debug_output.set_debug_messages)
         if hasattr(self.bridge, "bib_entries_ready"):
             self.bridge.bib_entries_ready.connect(self.debug_output.set_bib_entries)
+            self.debug_output.bibliography_selected.connect(self.navigate_to_bib_from_debug)
         if hasattr(self.bridge, "cit_entries_ready"):
             self.bridge.cit_entries_ready.connect(self.debug_output.set_cit_entries)
+            self.debug_output.citation_selected.connect(self.navigate_to_cit_from_debug)
         if hasattr(self.bridge, "stats_ready"):
             self.bridge.stats_ready.connect(self.stats_bar.set_stats)
         self.stats_bar.open_debug_tab.connect(self._on_open_debug_tab)
@@ -613,6 +615,34 @@ class CitationLinkerInstance(QWidget):
                 QMessageBox.critical(self, "Error", f"Error saving copy to chosen location:\n{e}")
         
         self.save_file_manager.reset_manager(upload=False, pdf=True)
+
+    @Slot(dict)
+    def navigate_to_cit_from_debug(self, cit_instance):
+        page = int(cit_instance.get("page_in_doc", 0))
+        rect = cit_instance.get("rect")
+        if page > 0:
+            page -=1
+        env_type = "output_doc"
+        self.navigate_to_env_page(env_type, rect, page)
+
+    @Slot(dict)
+    def navigate_to_bib_from_debug(self, bib_instance):
+        page = int(bib_instance.get("page_in_doc", 0))
+        rect = bib_instance.get("rect")
+        if page > 0:
+            page -=1
+        env_type = "output_alt"
+        self.navigate_to_env_page(env_type, rect, page)
+
+    def navigate_to_env_page(self, env_type, rect, page):
+        if not env_type or page is None or page < 0:
+            return
+        for env in self.view_environments:
+            if env["type"] == env_type:
+                env["viewer"].navigator.jump_to(page)
+                if rect:
+                    env["viewer"].view.set_tmp_highlight(rect, page)
+                return
 
     def has_unsaved_output(self):
         """Return True if output exists but hasn't been saved to a custom location."""

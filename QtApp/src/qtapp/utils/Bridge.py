@@ -197,7 +197,8 @@ class Bridge(QObject):
                                                           get_valid_bib_count,
                                                           get_certain_citation_count,
                                                           get_certain_bib_count,
-                                                          reset_data_buffers)
+                                                          reset_data_buffers,
+                                                          mark_linked_entries)
 
         output_file_path = ""
         try:
@@ -242,6 +243,9 @@ class Bridge(QObject):
                 return_code = multi_file_main()
             else:
                 return_code = multi_article_main(str(copied_source))
+
+            # Cross-reference matched pairs to set linked=True on buffer entries
+            mark_linked_entries()
 
             self.log_messages.clear()
             log_output = get_logs()

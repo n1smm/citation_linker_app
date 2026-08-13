@@ -2,7 +2,7 @@
 component for displaying debug output from citation-linker process
 """
 
-from    PySide6.QtCore      import Qt, Slot
+from    PySide6.QtCore      import Qt, Slot, Signal
 from    PySide6.QtWidgets   import (QWidget,
                                     QPushButton,
                                     QHBoxLayout,
@@ -19,6 +19,12 @@ from    PySide6.QtWidgets   import (QWidget,
 
 
 class DebugOutput(QWidget):
+    """
+
+    """
+
+    citation_selected = Signal(dict)
+    bibliography_selected = Signal(dict)
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -31,6 +37,8 @@ class DebugOutput(QWidget):
         self.debug_messages = []
         self.bib_entries = []
         self.cit_entries = []
+        self.selected_bib_entry = {}
+        self.selected_cit_entry = {}
 
         self.tabs = QTabWidget()
 
@@ -40,15 +48,18 @@ class DebugOutput(QWidget):
         self.full_message = QTextEdit()
 
         #  bib tab 
-        self.bib_table = QTableWidget(0, 6)
+        self.bib_table = QTableWidget(0, 8)
 
         #  cit tab 
-        self.cit_table = QTableWidget(0, 5)
+        self.cit_table = QTableWidget(0, 7)
 
         self._init_ui()
 
+        # signals
         self.table.cellClicked.connect(self.show_full_message)
         self.level_selector.currentTextChanged.connect(self.populate_table)
+        self.bib_table.cellClicked.connect(self.pick_bib_entry)
+        self.cit_table.cellClicked.connect(self.pick_cit_entry)
 
     #  ----------------
     # UI construction
@@ -113,7 +124,7 @@ class DebugOutput(QWidget):
         layout = QVBoxLayout(widget)
 
         self.bib_table.setHorizontalHeaderLabels(
-            ["Page", "Surname", "Name", "Year", "Others", "Text"])
+            ["Page", "Pg doc", "Surname", "Name", "Year", "Others", "Text", "Linked"])
         self.bib_table.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
         self.bib_table.setSelectionBehavior(QAbstractItemView.SelectRows)
         self.bib_table.setEditTriggers(QAbstractItemView.NoEditTriggers)
@@ -124,7 +135,9 @@ class DebugOutput(QWidget):
         bib_header.setSectionResizeMode(2, QHeaderView.ResizeMode.ResizeToContents)
         bib_header.setSectionResizeMode(3, QHeaderView.ResizeMode.ResizeToContents)
         bib_header.setSectionResizeMode(4, QHeaderView.ResizeMode.ResizeToContents)
-        bib_header.setSectionResizeMode(5, QHeaderView.ResizeMode.Stretch)
+        bib_header.setSectionResizeMode(5, QHeaderView.ResizeMode.ResizeToContents)
+        bib_header.setSectionResizeMode(6, QHeaderView.ResizeMode.Stretch)
+        bib_header.setSectionResizeMode(7, QHeaderView.ResizeMode.ResizeToContents)
         bib_header.setStretchLastSection(False)
 
         layout.addWidget(self.bib_table)
@@ -135,7 +148,7 @@ class DebugOutput(QWidget):
         layout = QVBoxLayout(widget)
 
         self.cit_table.setHorizontalHeaderLabels(
-            ["Page", "Year", "Surname", "Name", "Text"])
+            ["Page", "Pg doc", "Year", "Surname", "Name", "Text", "Linked"])
         self.cit_table.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
         self.cit_table.setSelectionBehavior(QAbstractItemView.SelectRows)
         self.cit_table.setEditTriggers(QAbstractItemView.NoEditTriggers)
@@ -145,7 +158,9 @@ class DebugOutput(QWidget):
         cit_header.setSectionResizeMode(1, QHeaderView.ResizeMode.ResizeToContents)
         cit_header.setSectionResizeMode(2, QHeaderView.ResizeMode.ResizeToContents)
         cit_header.setSectionResizeMode(3, QHeaderView.ResizeMode.ResizeToContents)
-        cit_header.setSectionResizeMode(4, QHeaderView.ResizeMode.Stretch)
+        cit_header.setSectionResizeMode(4, QHeaderView.ResizeMode.ResizeToContents)
+        cit_header.setSectionResizeMode(5, QHeaderView.ResizeMode.Stretch)
+        cit_header.setSectionResizeMode(6, QHeaderView.ResizeMode.ResizeToContents)
         cit_header.setStretchLastSection(False)
 
         layout.addWidget(self.cit_table)
@@ -154,6 +169,8 @@ class DebugOutput(QWidget):
     # -----------------
     # Slots — log tab
     # ----------------
+
+
 
     @Slot(int, int)
     def show_full_message(self, row, column):
@@ -233,11 +250,21 @@ class DebugOutput(QWidget):
             others = entry.get("others", [])
             others_str = ", ".join(o for o in others if o and o != "yyy")
             self.bib_table.setItem(row, 0, QTableWidgetItem(str(entry.get("page", ""))))
-            self.bib_table.setItem(row, 1, QTableWidgetItem(self._display_val(entry.get("surname"))))
-            self.bib_table.setItem(row, 2, QTableWidgetItem(self._display_val(entry.get("name"))))
-            self.bib_table.setItem(row, 3, QTableWidgetItem(self._display_val(entry.get("year"))))
-            self.bib_table.setItem(row, 4, QTableWidgetItem(others_str))
-            self.bib_table.setItem(row, 5, QTableWidgetItem(str(entry.get("text", ""))))
+            pg_doc = entry.get("page_in_doc")
+            self.bib_table.setItem(row, 1, QTableWidgetItem("" if pg_doc is None else str(pg_doc)))
+            self.bib_table.setItem(row, 2, QTableWidgetItem(self._display_val(entry.get("surname"))))
+            self.bib_table.setItem(row, 3, QTableWidgetItem(self._display_val(entry.get("name"))))
+            self.bib_table.setItem(row, 4, QTableWidgetItem(self._display_val(entry.get("year"))))
+            self.bib_table.setItem(row, 5, QTableWidgetItem(others_str))
+            self.bib_table.setItem(row, 6, QTableWidgetItem(str(entry.get("text", ""))))
+            linked = entry.get("linked", False)
+            self.bib_table.setItem(row, 7, QTableWidgetItem("✓" if linked else ""))
+
+    @Slot(int, int)
+    def pick_bib_entry(self, row, column):
+        self.selected_bib_entry = self.bib_entries[row]
+        self.bibliography_selected.emit(self.selected_bib_entry)
+        print(self.selected_bib_entry)
 
     # ---------------------
     # Slots — citations tab
@@ -251,10 +278,20 @@ class DebugOutput(QWidget):
             row = self.cit_table.rowCount()
             self.cit_table.insertRow(row)
             self.cit_table.setItem(row, 0, QTableWidgetItem(str(entry.get("page", ""))))
-            self.cit_table.setItem(row, 1, QTableWidgetItem(self._display_val(entry.get("year"))))
-            self.cit_table.setItem(row, 2, QTableWidgetItem(self._display_val(entry.get("surname"))))
-            self.cit_table.setItem(row, 3, QTableWidgetItem(self._display_val(entry.get("name"))))
-            self.cit_table.setItem(row, 4, QTableWidgetItem(str(entry.get("text", ""))))
+            pg_doc = entry.get("page_in_doc")
+            self.cit_table.setItem(row, 1, QTableWidgetItem("" if pg_doc is None else str(pg_doc)))
+            self.cit_table.setItem(row, 2, QTableWidgetItem(self._display_val(entry.get("year"))))
+            self.cit_table.setItem(row, 3, QTableWidgetItem(self._display_val(entry.get("surname"))))
+            self.cit_table.setItem(row, 4, QTableWidgetItem(self._display_val(entry.get("name"))))
+            self.cit_table.setItem(row, 5, QTableWidgetItem(str(entry.get("text", ""))))
+            linked = entry.get("linked", False)
+            self.cit_table.setItem(row, 6, QTableWidgetItem("✓" if linked else ""))
+
+    @Slot(int, int)
+    def pick_cit_entry(self, row, column):
+        self.selected_cit_entry = self.cit_entries[row]
+        self.citation_selected.emit(self.selected_cit_entry)
+        print(self.selected_cit_entry)
 
     @staticmethod
     def _display_val(value):
