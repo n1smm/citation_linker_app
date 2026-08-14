@@ -398,7 +398,7 @@ class   ExtendedView(QPdfView):
             self.prev_viewport = None
 
     def clear_selection(self):
-        """Clear current selection and hide popup."""
+        """Clear the current selection and highlighted entries, then hide the popup."""
         if self.selection_rect:
             self.viewport().update(self.selection_rect)
         self.clear_all_entries()
@@ -482,6 +482,7 @@ class   ExtendedView(QPdfView):
         painter.end()
 
     def tmp_highlight_paint(self):
+        """Paint the temporary highlight rect for the current page."""
         if not self.tmp_highlight:
             return
         if self.tmp_highlight["page"] != self.navigator.get_curr_page():
@@ -510,16 +511,19 @@ class   ExtendedView(QPdfView):
         painter.end()
 
     def set_tmp_highlight(self, rect, page):
+        """Store a temporary highlight rect/page and repaint the viewport."""
         if not page:
             page = self.navigator.get_curr_page()
         self.tmp_highlight = {"page": page, "rect": rect}
         self.viewport().update()
 
     def clear_tmp_highlight(self):
+        """Clear the temporary highlight and repaint the viewport."""
         self.tmp_highlight = None
         self.viewport().update()
 
     def show_all_entries(self, rects):
+        """Paint all highlighted entry rects for the current page."""
         if rects is None:
             return
         zoom = self.effectiveZoomFactor()
@@ -546,10 +550,12 @@ class   ExtendedView(QPdfView):
         painter.end()
 
     def set_all_entries(self, rects):
+        """Store the entry rects to highlight and repaint the viewport."""
         self.all_entries = rects
         self.viewport().update()
 
     def clear_all_entries(self):
+        """Clear the highlighted entry rects and repaint the viewport."""
         self.all_entries = None
         self.viewport().update()
 

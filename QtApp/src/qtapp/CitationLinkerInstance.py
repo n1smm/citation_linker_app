@@ -626,6 +626,7 @@ class CitationLinkerInstance(QWidget):
 
     @Slot(dict)
     def navigate_to_cit_from_debug(self, cit_instance):
+        """Jump the output viewer to the citation entry's page and highlight its rect."""
         page = int(cit_instance.get("page_in_doc", 0))
         rect = cit_instance.get("rect")
         if page > 0:
@@ -635,6 +636,7 @@ class CitationLinkerInstance(QWidget):
 
     @Slot(dict)
     def navigate_to_bib_from_debug(self, bib_instance):
+        """Jump the alternative viewer to the bibliography entry's page and highlight its rect."""
         page = int(bib_instance.get("page_in_doc", 0))
         rect = bib_instance.get("rect")
         if page > 0:
@@ -644,6 +646,7 @@ class CitationLinkerInstance(QWidget):
 
     @Slot(bool)
     def highlight_all_citations(self, checked):
+        """Show or hide all citation/bibliography entries for the current page."""
         self.highlight_all = checked
         if checked:
             self.curr_page_entries(0)
@@ -653,6 +656,7 @@ class CitationLinkerInstance(QWidget):
                     env["viewer"].view.clear_all_entries()
 
     def navigate_to_env_page(self, env_type, rect, page):
+        """Jump the viewer of env_type to a page and optionally highlight a rect."""
         if not env_type or page is None or page < 0:
             return
         for env in self.view_environments:
@@ -665,6 +669,7 @@ class CitationLinkerInstance(QWidget):
 
     @Slot(int)
     def curr_page_entries(self, page):
+        """Update each output viewer's highlighted entries for its own current page."""
         if not self.highlight_all:
             return
         for env in self.view_environments:

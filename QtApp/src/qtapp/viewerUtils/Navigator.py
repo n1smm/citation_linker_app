@@ -2,7 +2,7 @@
 PDF navigation widget with page controls and navigation history.
 Provides page forward/back, history navigation, and manual page jumping.
 """
-from PySide6.QtCore         import Qt, QPointF, QTimer, Slot, Signal
+from PySide6.QtCore         import Qt, QPointF, QTimer, Slot
 from PySide6.QtWidgets      import (QWidget,
                                     QPushButton,
                                     QSpinBox,

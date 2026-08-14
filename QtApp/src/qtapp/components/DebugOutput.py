@@ -19,8 +19,17 @@ from    PySide6.QtWidgets   import (QWidget,
 
 
 class DebugOutput(QWidget):
-    """
+    """ 
+    debug output window for the citation-linker process.
+    opened as a separate top-level window from a tab instance.
 
+    This class displays diagnostic information including:
+    - Logs: process log messages with level filtering and full message view
+    - Citations: detected citations with page position and linked status
+    - Bibliography: detected bibliography entries with page position and linked status
+
+    Selecting a citation or bibliography row emits a signal used by the tab instance
+    to jump the corresponding viewer to that entry's location in the document.
     """
 
     citation_selected = Signal(dict)
@@ -262,6 +271,7 @@ class DebugOutput(QWidget):
 
     @Slot(int, int)
     def pick_bib_entry(self, row, column):
+        """Emit the bibliography entry for the clicked table row."""
         self.selected_bib_entry = self.bib_entries[row]
         self.bibliography_selected.emit(self.selected_bib_entry)
         print(self.selected_bib_entry)
@@ -289,6 +299,7 @@ class DebugOutput(QWidget):
 
     @Slot(int, int)
     def pick_cit_entry(self, row, column):
+        """Emit the citation entry for the clicked table row."""
         self.selected_cit_entry = self.cit_entries[row]
         self.citation_selected.emit(self.selected_cit_entry)
         print(self.selected_cit_entry)

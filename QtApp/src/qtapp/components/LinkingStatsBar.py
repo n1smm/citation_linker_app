@@ -12,22 +12,21 @@ from    PySide6.QtWidgets               import  (QWidget,
 
 
 class LinkingStatsBar(QWidget):
-    """
-    Narrow one-line bar showing citation linking results.
+    """ 
+    narrow status bar showing citation linking results below the pdf viewers.
 
-    Parent: CitationLinkerInstance
-    Children: clickable QPushButtons styled as inline labels
-
-    Displays: Citations: N | Bibliography: N | Linked: N
-    - Each stat label is clickable → opens the debug output on the relevant tab
-    - Linked count is color-coded by ratio (green ≥80%, yellow 50-80%, red <50%)
-    - Hover tooltips show valid-vs-total breakdown
+    This class displays linking statistics and a highlight control including:
+    - Citations: N | Bibliography: N | Linked: N, each clickable to open the debug output on the relevant tab
+    - Linked count color-coded by ratio (green >=80%, amber 50-80%, red <50%)
+    - A "Highlight all" checkbox to toggle highlighting of all possible citation/bibliography entries
+    - Hover tooltips showing valid-vs-total breakdowns
     """
 
     open_debug_tab = Signal(str)  # "citations" | "bibliography" | "linked"
     show_all_citations = Signal(bool)
 
     def __init__(self, parent=None):
+        """Initialize the stats bar with stat labels, buttons, and the highlight checkbox."""
         super().__init__(parent)
         self.setMaximumHeight(28)
         self.setVisible(False)
@@ -139,19 +138,23 @@ class LinkingStatsBar(QWidget):
 
     @Slot()
     def on_show_all_toggled(self, checked):
+        """Emit show_all_citations when the 'Highlight all' checkbox is toggled."""
         self.show_all_citations.emit(checked)
         self._refresh_show_tip()
 
     def _refresh_show_tip(self):
+        """Update the 'Highlight all' checkbox tooltip with its current state."""
         state = "ON" if self._show_all.isChecked() else "OFF"
         self._show_all.setToolTip(f"see all possible citations and Bibliography entries. Current state: {state}")
 
     def _linked_ratio_pct(self):
+        """Return the percentage of valid citations that were linked."""
         if self._valid_cit == 0:
             return 0.0
         return (self._linked / self._valid_cit) * 100.0
 
     def _apply_color(self):
+        """Color-code the linked count by ratio (green, amber, or red)."""
         ratio = self._linked_ratio_pct()
         if ratio >= 80:
             color = "#2e7d32"  # green
