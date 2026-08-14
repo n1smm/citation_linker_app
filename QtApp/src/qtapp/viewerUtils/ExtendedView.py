@@ -78,6 +78,7 @@ class   ExtendedView(QPdfView):
         self.curr_annot_idx = 0
         self.curr_annot_type = None
         self.tmp_highlight = None
+        self.all_entries = None
         self.is_output = isOutput
         print("dpi: ", dpi, "transform_factor: ", self.zoom_transform_factor)
         print("physical dpi: ", physical_dpi)
@@ -122,6 +123,7 @@ class   ExtendedView(QPdfView):
         self.paint_annotiations()
         self.paint_pages()
         self.tmp_highlight_paint()
+        self.show_all_entries(self.all_entries)
         if self.selection_rect:
             painter = QPainter(self.viewport())
             color = QColor(245, 228, 212, 100)
@@ -399,6 +401,7 @@ class   ExtendedView(QPdfView):
         """Clear current selection and hide popup."""
         if self.selection_rect:
             self.viewport().update(self.selection_rect)
+        self.clear_all_entries()
         self.selection_rect = None
         self.update()
         self.popup.hide()
@@ -499,7 +502,7 @@ class   ExtendedView(QPdfView):
             viewport_rects.append(self.text_selector.page_to_viewport_coords(rect_px))
 
         painter = QPainter(self.viewport())
-        color = QColor(220, 136, 91, 50)
+        color = QColor(230, 136, 91, 50)
         painter.setBrush(color)
         painter.setPen(Qt.NoPen)
         for r in viewport_rects:
@@ -515,9 +518,40 @@ class   ExtendedView(QPdfView):
     def clear_tmp_highlight(self):
         self.tmp_highlight = None
         self.viewport().update()
-        
 
-        
+    def show_all_entries(self, rects):
+        if rects is None:
+            return
+        zoom = self.effectiveZoomFactor()
+        painter = QPainter(self.viewport())
+        color = QColor(230, 136, 91, 50)
+        painter.setBrush(color)
+        painter.setPen(Qt.NoPen)
+        viewport_rects = []
+        for rect in rects:
+            if rect is None:
+                continue
+            if isinstance(rect[0], (int, float)):
+                curr_rects = [rect]
+            else:
+                curr_rects = [r for r in rect if r and len(r) == 4]
+            for r in curr_rects:
+                if r is None:
+                    continue
+                rect_qt = rect_py_to_qt(Rect(*r))
+                rect_px = dpi_to_px({"rect": rect_qt, "current_zoom": zoom})
+                viewport_rects.append(self.text_selector.page_to_viewport_coords(rect_px))
+        for r in viewport_rects:
+            painter.drawRect(r)
+        painter.end()
+
+    def set_all_entries(self, rects):
+        self.all_entries = rects
+        self.viewport().update()
+
+    def clear_all_entries(self):
+        self.all_entries = None
+        self.viewport().update()
 
     def draw_underline(self, painter, rect, annot):
         """Draw underline annotation."""

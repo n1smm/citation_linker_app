@@ -7,6 +7,7 @@ from    PySide6.QtGui                   import  QColor
 from    PySide6.QtWidgets               import  (QWidget,
                                                  QPushButton,
                                                  QHBoxLayout,
+                                                 QCheckBox,
                                                  QLabel)
 
 
@@ -24,6 +25,7 @@ class LinkingStatsBar(QWidget):
     """
 
     open_debug_tab = Signal(str)  # "citations" | "bibliography" | "linked"
+    show_all_citations = Signal(bool)
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -82,6 +84,13 @@ class LinkingStatsBar(QWidget):
         self._linked_btn.clicked.connect(lambda: self.open_debug_tab.emit("linked"))
         layout.addWidget(self._linked_btn)
 
+        self._show_all = QCheckBox("Highlight all")
+        self._show_all.setCursor(Qt.PointingHandCursor)
+        self._show_all.setToolTip("")
+        self._show_all.toggled.connect(self.on_show_all_toggled)
+        layout.addWidget(self._show_all)
+
+
         layout.addStretch()
 
         self._valid_cit = 0
@@ -121,10 +130,21 @@ class LinkingStatsBar(QWidget):
             tip += f" ({ratio_pct:.0f}% of valid citations)"
         self._linked_btn.setToolTip(tip)
 
+        self._refresh_show_tip()
+
         # Color-code the linked count
         self._apply_color()
 
         self.setVisible(True)
+
+    @Slot()
+    def on_show_all_toggled(self, checked):
+        self.show_all_citations.emit(checked)
+        self._refresh_show_tip()
+
+    def _refresh_show_tip(self):
+        state = "ON" if self._show_all.isChecked() else "OFF"
+        self._show_all.setToolTip(f"see all possible citations and Bibliography entries. Current state: {state}")
 
     def _linked_ratio_pct(self):
         if self._valid_cit == 0:

@@ -82,7 +82,10 @@ class CitationLinkerInstance(QWidget):
 
 
         self.view_environments = []
+        self.bib_entries = []
+        self.cit_entries = []
         self.is_input_view = True
+        self.highlight_all = False
         self.bridge = Bridge(self)
         self.debug_output = DebugOutput(parent=self)
         self.debug_output.setWindowFlags(Qt.Window)
@@ -149,12 +152,15 @@ class CitationLinkerInstance(QWidget):
             self.bridge.log_messages_ready.connect(self.debug_output.set_debug_messages)
         if hasattr(self.bridge, "bib_entries_ready"):
             self.bridge.bib_entries_ready.connect(self.debug_output.set_bib_entries)
+            self.bib_entries = self.debug_output.bib_entries
             self.debug_output.bibliography_selected.connect(self.navigate_to_bib_from_debug)
         if hasattr(self.bridge, "cit_entries_ready"):
             self.bridge.cit_entries_ready.connect(self.debug_output.set_cit_entries)
             self.debug_output.citation_selected.connect(self.navigate_to_cit_from_debug)
+            self.cit_entries = self.debug_output.cit_entries
         if hasattr(self.bridge, "stats_ready"):
             self.bridge.stats_ready.connect(self.stats_bar.set_stats)
+            self.stats_bar.show_all_citations.connect(self.highlight_all_citations)
         self.stats_bar.open_debug_tab.connect(self._on_open_debug_tab)
         self.save_file_manager.process_finished.connect(self.perform_save)
 
@@ -288,6 +294,7 @@ class CitationLinkerInstance(QWidget):
         """Connect link_saved signals from all viewers to the data handler."""
         for env in self.view_environments:
             env["viewer"].link_saved.connect(self.send_link_data)
+
     
     def clear_text_handlers(self):
         """Clear configuration data from all text handlers."""
@@ -336,6 +343,7 @@ class CitationLinkerInstance(QWidget):
                 env["viewer"].show()
                 self.document_config.output_file_path = output_file_path
                 self.set_alt_viewer(env)
+                env["viewer"].navigator.nav.currentPageChanged.connect(self.curr_page_entries)
             self.stacked_layout.setCurrentIndex(self.output_idx)
             self.document_config.hide()
             self.is_input_view = False
@@ -634,6 +642,16 @@ class CitationLinkerInstance(QWidget):
         env_type = "output_alt"
         self.navigate_to_env_page(env_type, rect, page)
 
+    @Slot(bool)
+    def highlight_all_citations(self, checked):
+        self.highlight_all = checked
+        if checked:
+            self.curr_page_entries(0)
+        else:
+            for env in self.view_environments:
+                if env["type"] in ("output_doc", "output_alt"):
+                    env["viewer"].view.clear_all_entries()
+
     def navigate_to_env_page(self, env_type, rect, page):
         if not env_type or page is None or page < 0:
             return
@@ -643,6 +661,22 @@ class CitationLinkerInstance(QWidget):
                 if rect:
                     env["viewer"].view.set_tmp_highlight(rect, page)
                 return
+
+
+    @Slot(int)
+    def curr_page_entries(self, page):
+        if not self.highlight_all:
+            return
+        for env in self.view_environments:
+            if env["type"] == "output_doc":
+                curr_page = env["viewer"].navigator.get_curr_page()
+                curr_cit_rects = [cit["rect"] for cit in self.debug_output.cit_entries if cit["page_in_doc"] -1 == curr_page]
+                env["viewer"].view.set_all_entries(curr_cit_rects)
+            elif env["type"] == "output_alt":
+                curr_page = env["viewer"].navigator.get_curr_page()
+                curr_bib_rects = [bib["rect"] for bib in self.debug_output.bib_entries if bib["page_in_doc"] -1 == curr_page]
+                env["viewer"].view.set_all_entries(curr_bib_rects)
+
 
     def has_unsaved_output(self):
         """Return True if output exists but hasn't been saved to a custom location."""
