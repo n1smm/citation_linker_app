@@ -1,3 +1,4 @@
+from    pymupdf                         import  Rect
 from    PySide6.QtPdfWidgets            import  QPdfView
 from    PySide6.QtPdf                   import  QPdfPageNavigator
 from    PySide6.QtCore                  import  Qt, QMargins, QRect, QRectF, QTimer, QPoint, Slot
@@ -12,7 +13,7 @@ from    qtapp.utils.TextHandler         import  TextHandler
 from    qtapp.viewerUtils.Navigator     import  PdfNavigator
 from    qtapp.viewerUtils.ZoomSelector  import  ZoomSelector
 from    qtapp.components.PopupWidget    import  PopupWidget
-from    qtapp.utils.qtToPymuUtils       import  dpi_to_px, px_to_dpi
+from    qtapp.utils.qtToPymuUtils       import  dpi_to_px, px_to_dpi, rect_py_to_qt
 
 from    functools                       import  partial
 
@@ -76,6 +77,8 @@ class   ExtendedView(QPdfView):
         self.curr_page_rect = None
         self.curr_annot_idx = 0
         self.curr_annot_type = None
+        self.tmp_highlight = None
+        self.all_entries = None
         self.is_output = isOutput
         print("dpi: ", dpi, "transform_factor: ", self.zoom_transform_factor)
         print("physical dpi: ", physical_dpi)
@@ -119,6 +122,8 @@ class   ExtendedView(QPdfView):
         self.update_text_selector()
         self.paint_annotiations()
         self.paint_pages()
+        self.tmp_highlight_paint()
+        self.show_all_entries(self.all_entries)
         if self.selection_rect:
             painter = QPainter(self.viewport())
             color = QColor(245, 228, 212, 100)
@@ -207,6 +212,7 @@ class   ExtendedView(QPdfView):
             return
 
 
+        self.clear_tmp_highlight()
         if event.angleDelta().y() > 0:
             self.navigator.page_back()
         elif event.angleDelta().y() < 0:
@@ -392,9 +398,10 @@ class   ExtendedView(QPdfView):
             self.prev_viewport = None
 
     def clear_selection(self):
-        """Clear current selection and hide popup."""
+        """Clear the current selection and highlighted entries, then hide the popup."""
         if self.selection_rect:
             self.viewport().update(self.selection_rect)
+        self.clear_all_entries()
         self.selection_rect = None
         self.update()
         self.popup.hide()
@@ -473,6 +480,84 @@ class   ExtendedView(QPdfView):
                     painter.setBrush(color)
                     painter.drawRect(rect)
         painter.end()
+
+    def tmp_highlight_paint(self):
+        """Paint the temporary highlight rect for the current page."""
+        if not self.tmp_highlight:
+            return
+        if self.tmp_highlight["page"] != self.navigator.get_curr_page():
+            return
+        tmp_rect = self.tmp_highlight.get("rect")
+        viewport_rects = []
+        zoom = self.effectiveZoomFactor()
+
+        if not tmp_rect:
+            return
+        if isinstance(tmp_rect[0], (int, float)):
+            rect = [tmp_rect]
+        else:
+            rect = [r for r in tmp_rect if r and len(r) == 4]
+        for r in rect:
+            rect_qt = rect_py_to_qt(Rect(*r))
+            rect_px = dpi_to_px({"rect": rect_qt, "current_zoom": zoom})
+            viewport_rects.append(self.text_selector.page_to_viewport_coords(rect_px))
+
+        painter = QPainter(self.viewport())
+        color = QColor(230, 136, 91, 50)
+        painter.setBrush(color)
+        painter.setPen(Qt.NoPen)
+        for r in viewport_rects:
+            painter.drawRect(r)
+        painter.end()
+
+    def set_tmp_highlight(self, rect, page):
+        """Store a temporary highlight rect/page and repaint the viewport."""
+        if not page:
+            page = self.navigator.get_curr_page()
+        self.tmp_highlight = {"page": page, "rect": rect}
+        self.viewport().update()
+
+    def clear_tmp_highlight(self):
+        """Clear the temporary highlight and repaint the viewport."""
+        self.tmp_highlight = None
+        self.viewport().update()
+
+    def show_all_entries(self, rects):
+        """Paint all highlighted entry rects for the current page."""
+        if rects is None:
+            return
+        zoom = self.effectiveZoomFactor()
+        painter = QPainter(self.viewport())
+        color = QColor(230, 136, 91, 50)
+        painter.setBrush(color)
+        painter.setPen(Qt.NoPen)
+        viewport_rects = []
+        for rect in rects:
+            if rect is None:
+                continue
+            if isinstance(rect[0], (int, float)):
+                curr_rects = [rect]
+            else:
+                curr_rects = [r for r in rect if r and len(r) == 4]
+            for r in curr_rects:
+                if r is None:
+                    continue
+                rect_qt = rect_py_to_qt(Rect(*r))
+                rect_px = dpi_to_px({"rect": rect_qt, "current_zoom": zoom})
+                viewport_rects.append(self.text_selector.page_to_viewport_coords(rect_px))
+        for r in viewport_rects:
+            painter.drawRect(r)
+        painter.end()
+
+    def set_all_entries(self, rects):
+        """Store the entry rects to highlight and repaint the viewport."""
+        self.all_entries = rects
+        self.viewport().update()
+
+    def clear_all_entries(self):
+        """Clear the highlighted entry rects and repaint the viewport."""
+        self.all_entries = None
+        self.viewport().update()
 
     def draw_underline(self, painter, rect, annot):
         """Draw underline annotation."""

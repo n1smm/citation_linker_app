@@ -108,6 +108,7 @@ class DocConfig(QWidget):
     def init_ui(self):
         """Build the configuration user interface with all form fields."""
         main_layout = QVBoxLayout(self)
+        self._legacy_widgets = []
 
         # Scroll area for config fields
         scroll = QScrollArea()
@@ -204,6 +205,14 @@ class DocConfig(QWidget):
                            "Use this to prevent false positives from common abbreviations.\n"
                            "Example: 'ur', 'Ur.' (editor abbreviations)")
         self.search_exclude_list = self.current_list_widget
+        # Store label for legacy toggle
+        _excl_label = text_layout.itemAtPosition(row, 0)
+        _excl_help  = text_layout.itemAtPosition(row, 2)
+        if _excl_label:
+            self._legacy_widgets.append(_excl_label.widget())
+        self._legacy_widgets.append(self.search_exclude_list)
+        if _excl_help:
+            self._legacy_widgets.append(_excl_help.widget())
 
         text_group.setLayout(text_layout)
         scroll_layout.addWidget(text_group)
@@ -231,8 +240,9 @@ class DocConfig(QWidget):
         bool_layout.addWidget(help_btn, bool_row, 2)
         bool_row += 1
 
-        # SOFT_YEAR
-        bool_layout.addWidget(QLabel("SOFT_YEAR:"), bool_row, 0)
+        # SOFT_YEAR (legacy-only)
+        soft_year_label = QLabel("SOFT_YEAR:")
+        bool_layout.addWidget(soft_year_label, bool_row, 0)
         self.soft_year_check = QCheckBox()
         bool_layout.addWidget(self.soft_year_check, bool_row, 1)
         help_btn = QPushButton("?")
@@ -243,10 +253,12 @@ class DocConfig(QWidget):
             "Includes year ranges (e.g., 1998-2004) and checks year ±1 in case of typos.\n"
             "WARNING: May create links where they shouldn't be."))
         bool_layout.addWidget(help_btn, bool_row, 2)
+        self._legacy_widgets.extend([soft_year_label, self.soft_year_check, help_btn])
         bool_row += 1
 
-        # DEEP_SEARCH
-        bool_layout.addWidget(QLabel("DEEP_SEARCH:"), bool_row, 0)
+        # DEEP_SEARCH (legacy-only)
+        deep_search_label = QLabel("DEEP_SEARCH:")
+        bool_layout.addWidget(deep_search_label, bool_row, 0)
         self.deep_search_check = QCheckBox()
         bool_layout.addWidget(self.deep_search_check, bool_row, 1)
         help_btn = QPushButton("?")
@@ -257,10 +269,12 @@ class DocConfig(QWidget):
             "Finds citations that may not exactly match the bibliography format.\n"
             "WARNING: May create links where they shouldn't be."))
         bool_layout.addWidget(help_btn, bool_row, 2)
+        self._legacy_widgets.extend([deep_search_label, self.deep_search_check, help_btn])
         bool_row += 1
 
-        # ALTERNATIVE_BIB
-        bool_layout.addWidget(QLabel("ALTERNATIVE_BIB:"), bool_row, 0)
+        # ALTERNATIVE_BIB (legacy-only)
+        alt_bib_label = QLabel("ALTERNATIVE_BIB:")
+        bool_layout.addWidget(alt_bib_label, bool_row, 0)
         self.alternative_bib_check = QCheckBox()
         bool_layout.addWidget(self.alternative_bib_check, bool_row, 1)
         help_btn = QPushButton("?")
@@ -271,6 +285,7 @@ class DocConfig(QWidget):
             "Format: (Year). Work title...\n"
             "WARNING: May create links where they shouldn't be."))
         bool_layout.addWidget(help_btn, bool_row, 2)
+        self._legacy_widgets.extend([alt_bib_label, self.alternative_bib_check, help_btn])
         bool_row += 1
 
         # LEGACY
@@ -285,6 +300,9 @@ class DocConfig(QWidget):
             "When disabled, the modular parser is used and BIB_STRUCTURE must be defined.\n"
             "If BIB_STRUCTURE is not set, the parser automatically falls back to legacy."))
         bool_layout.addWidget(help_btn, bool_row, 2)
+
+        self.legacy_check.toggled.connect(self._toggle_legacy_options)
+        self._toggle_legacy_options(self.legacy_check.isChecked())
 
         bool_group.setLayout(bool_layout)
         scroll_layout.addWidget(bool_group)
@@ -703,6 +721,11 @@ class DocConfig(QWidget):
         self.bridge.set_paths(config_path=self.config_path)
         self.save_config()
 
+    def _toggle_legacy_options(self, checked):
+        """Show/hide options that only apply when using the legacy parser."""
+        for w in self._legacy_widgets:
+            w.setVisible(checked)
+
     def clear_all_fields(self):
         """Clear all configuration fields."""
         self.debug_check.setChecked(False)
@@ -716,7 +739,7 @@ class DocConfig(QWidget):
         self.deep_search_check.setChecked(False)
         self.search_exclude_list.clear()
         self.alternative_bib_check.setChecked(False)
-        self.legacy_check.setChecked(True)
+        self.legacy_check.setChecked(False)
 
         self.parent.clear_text_handlers()
 
@@ -777,13 +800,19 @@ class DocConfig(QWidget):
         """Convert one-based string list to zero-based article cache."""
         cache = []
         for i in range(data.count()):
-            tokens = data.item(i).text().split(":")
-            # transform from 1 index to 0 index  count
-            pair = {
-                    "first": int(tokens[0]) -1,
-                    "last": int(tokens[1]) -1
-                    }
-            cache.append(pair)
+            text = data.item(i).text()
+            parts = text.split(":")
+            if len(parts) != 2:
+                print(f"Warning: Skipping malformed ARTICLE_BREAKS entry '{text}' — expected 'start:end'")
+                continue
+            try:
+                pair = {
+                    "first": int(parts[0]) - 1,
+                    "last": int(parts[1]) - 1
+                }
+                cache.append(pair)
+            except (ValueError, TypeError):
+                print(f"Warning: Skipping non-numeric ARTICLE_BREAKS entry '{text}'")
         return cache
 
     def set_data_from_view(self, config_data=None):
