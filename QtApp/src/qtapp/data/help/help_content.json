@@ -21,7 +21,7 @@
 		"tab_type": "introduction",
 		"data_type": "TEXT",
 		"position": 15,
-		"data": "• Automatic citation detection and linking\n• Interactive editor with split-view for verification\n• Configurable matching parameters (SOFT_YEAR, DEEP_SEARCH)\n• Manual link creation and adjustment\n• Support for complex citations (multiple authors, page ranges, prefixes)\n• Handles nested parentheses and special cases"
+		"data": "• Automatic citation detection and linking\n• Interactive editor with split-view for verification\n• Configurable matching parameters (legacy parser: SOFT_YEAR, DEEP_SEARCH)\n• Manual link creation and adjustment\n• Support for complex citations (multiple authors, page ranges, prefixes)\n• Handles nested parentheses and special cases\n• Live linking statistics bar with colour-coded results\n• Debug output window that jumps back to entries in the document\n• Customizable bibliography structure editor"
 	},
 	{
 		"tab_type": "introduction",
@@ -33,7 +33,7 @@
 		"tab_type": "introduction",
 		"data_type": "TEXT",
 		"position": 25,
-		"data": "1. Select a PDF document and open it\n2. Mark the beginning of citations (usually start of text)\n3. Mark the end of citations (after bibliography)\n4. Configure parser settings if needed (optional)\n5. Start the automated linking process\n6. Review results in split view and make adjustments"
+		"data": "1. Select a PDF document and open it\n2. Mark the beginning of citations (usually start of text)\n3. Mark the end of citations (after bibliography)\n4. Configure parser settings if needed (optional)\n5. Start the automated linking process\n6. Review results in the split view, the statistics bar, and the Debug Output window, then make adjustments"
 	},
 	{
 		"tab_type": "introduction",
@@ -93,7 +93,7 @@
 		"tab_type": "ui",
 		"data_type": "TEXT",
 		"position": 10,
-		"data": "1. File Browser: Browse and select PDF files from your computer\n2. Configuration Panel: Adjust parser settings before processing\n3. Document Viewer: Main area for viewing and marking document boundaries\n4. Status Bar: Shows current page, boundary markers, and action feedback"
+		"data": "1. File Browser: Browse and select PDF files from your computer\n2. Configuration Panel: Adjust parser settings before processing\n3. Document Viewer: Main area for viewing and marking document boundaries\n4. Status Bar: Shows current page, boundary markers, and action feedback\n5. Statistics Bar: Shows linking results (citations, bibliography, linked counts) after processing — see the Statistics Bar tab\n6. Debug Output Window: Detailed diagnostic output with links back to document locations — see the Debug Output tab"
 	},
 	{
 		"tab_type": "ui",
@@ -117,7 +117,7 @@
 		"tab_type": "ui",
 		"data_type": "TEXT",
 		"position": 25,
-		"data": "Adjust the following options before linking:\n• SOFT_YEAR: Add ±1 year tolerance to year matching\n• DEEP_SEARCH: Enable fuzzy author name matching\n• SEARCH_EXCLUDE: List words to exclude from deep search\n• ALTERNATIVE_BIB: Support 'Year. Title' bibliography format\nDefaults are suitable for most documents."
+		"data": "The app has two bibliography parsers. \"Legacy\" means the original, fixed-rule parser; it is kept for backward compatibility, but its options do NOT affect the newer modular parser.\n\n• Modular parser (default): configured with the Bibliography Structure Editor — see the Bibliography editor tab.\n• Legacy parser: enable it by checking the LEGACY option below.\n\nOptions available with BOTH parsers:\n• DEBUG: Enable verbose logging\n• SPECIAL_CASE: Phrases that mark repeated citations\n• BIBLIOGRAPHY_DELIMITER: Text marking the start of the bibliography\n• ANNOT_TYPE: How citations are marked (underline or highlight)\n• COLOR: Colour of the annotations\n• OFFSET: Page shift for multi-article documents\n• ARTICLE_BREAKS: Page ranges for multi-article documents\n\nLEGACY options (shown only when LEGACY is checked — they only affect the legacy parser):\n• SOFT_YEAR: Add ±1 year tolerance to year matching\n• DEEP_SEARCH: Enable fuzzy author name matching\n• SEARCH_EXCLUDE: Words to exclude from deep search\n• ALTERNATIVE_BIB: Support 'Year. Title' bibliography format\n\nList fields (SPECIAL_CASE, BIBLIOGRAPHY_DELIMITER, ARTICLE_BREAKS, SEARCH_EXCLUDE) each have Add, Remove, Change, ▲/▼ reorder, and Clear buttons.\nDefaults are suitable for most documents."
 	},
 	{
 		"tab_type": "ui",
@@ -201,7 +201,7 @@
 		"tab_type": "ui",
 		"data_type": "TEXT",
 		"position": 90,
-		"data": "• Save your configuration after setting it up for future use\n• For OCR-scanned documents, enable SOFT_YEAR and DEEP_SEARCH\n• Use SEARCH_EXCLUDE to prevent matching common abbreviations\n• Start with default settings on clean documents for best accuracy\n• Review all automatic links before saving the output"
+		"data": "• Save your configuration after setting it up for future use\n• For OCR-scanned documents, enable SOFT_YEAR and DEEP_SEARCH (legacy parser only)\n• With the legacy parser, use SEARCH_EXCLUDE to prevent matching common abbreviations\n• Start with default settings on clean documents for best accuracy\n• Review all automatic links before saving the output"
 	},
 	{
 		"tab_type": "parser",
@@ -219,7 +219,7 @@
 		"tab_type": "parser",
 		"data_type": "TEXT",
 		"position": 5,
-		"data": "For advanced adaptations and configuration check the Bibliography editor tab."
+		"data": "For advanced adaptations and configuration check the Bibliography editor tab.\n\nNote: the sections marked \"(legacy parser only)\" below describe options of the original, fixed-rule \"legacy\" bibliography parser. They do not affect the newer modular parser, and they only appear in the configuration window when LEGACY is enabled. The modular parser is the default."
 	},
 	{
 		"tab_type": "parser",
@@ -261,7 +261,7 @@
 		"tab_type": "parser",
 		"data_type": "TITLE",
 		"position": 45,
-		"data": "Alternative Bibliography Format"
+		"data": "Alternative Bibliography Format (legacy parser only)"
 	},
 	{
 		"tab_type": "parser",
@@ -273,7 +273,7 @@
 		"tab_type": "parser",
 		"data_type": "TITLE",
 		"position": 55,
-		"data": "SOFT_YEAR Configuration"
+		"data": "SOFT_YEAR Configuration (legacy parser only)"
 	},
 	{
 		"tab_type": "parser",
@@ -285,7 +285,7 @@
 		"tab_type": "parser",
 		"data_type": "TITLE",
 		"position": 65,
-		"data": "DEEP_SEARCH Configuration"
+		"data": "DEEP_SEARCH Configuration (legacy parser only)"
 	},
 	{
 		"tab_type": "parser",
@@ -297,7 +297,7 @@
 		"tab_type": "parser",
 		"data_type": "TITLE",
 		"position": 75,
-		"data": "SEARCH_EXCLUDE Configuration"
+		"data": "SEARCH_EXCLUDE Configuration (legacy parser only)"
 	},
 	{
 		"tab_type": "parser",
@@ -315,7 +315,7 @@
 		"tab_type": "parser",
 		"data_type": "TEXT",
 		"position": 90,
-		"data": "For successful automatic linking:\n• Author surname must be CAPITALIZED (lowercase surnames are not detected)\n• Year must match bibliography exactly (unless SOFT_YEAR is enabled)\n• For citations like (Author [Year]), surname must immediately precede year\n• No line breaks in surnames (Wolfgang → Wol-\nfgang fails)\n• Author declension must match bibliography exactly\n• First occurrence of citation determines the bibliography entry"
+		"data": "For successful automatic linking:\n• Author surname must be CAPITALIZED (lowercase surnames are not detected)\n• Year must match bibliography exactly (unless SOFT_YEAR is enabled — legacy parser only)\n• For citations like (Author [Year]), surname must immediately precede year\n• No line breaks in surnames (Wolfgang → Wol-\nfgang fails)\n• Author declension must match bibliography exactly\n• First occurrence of citation determines the bibliography entry"
 	},
 	{
 		"tab_type": "parser",
@@ -327,7 +327,7 @@
 		"tab_type": "parser",
 		"data_type": "TEXT",
 		"position": 100,
-		"data": "Critical constraints:\n• Only works with PDF documents\n• Only supports Chicago author-date style\n• Bibliography must be located at the end of the document\n• Processes one document at a time\n• Author surname must be capitalized\n• No line breaks in surnames\n• No declension of author names (surname must match exactly)\n• Citation year must match bibliography year exactly (unless SOFT_YEAR enabled)"
+		"data": "Critical constraints:\n• Only works with PDF documents\n• Only supports Chicago author-date style\n• Bibliography must be located at the end of the document\n• Processes one document at a time\n• Author surname must be capitalized\n• No line breaks in surnames\n• No declension of author names (surname must match exactly)\n• Citation year must match bibliography year exactly (unless SOFT_YEAR is enabled — legacy parser only)"
 	},
 	{
 		"tab_type": "parser",
@@ -351,7 +351,7 @@
 		"tab_type": "parser",
 		"data_type": "TEXT",
 		"position": 120,
-		"data": "✗ FAILS: (trocki 2008) - lowercase surname not detected\n✗ FAILS: (Wol-fgang Iser 1988) - line break in surname fails\n✗ FAILS: (Author 1999-2000) - year mismatch, use SOFT_YEAR or match exactly\n✗ FAILS: (Iser [1988]) - brackets around year without surname immediately before\n✗ FAILS: (Smith, John 2010) - full name format not recognized\n✗ FAILS: (David Davidson 2010) - first name before surname fails\n✗ FAILS: see Frank 2002: 8–40 - unparenthesized citations unreliable\n✗ FAILS: (Zima [2015: 2-3]) - punctuation inside brackets confuses parser\n✗ FAILS: (Author 1990') - with apostrophe or special marks on year\n✗ FAILS: (Müller 2005) when bibliography has (Müller 2005) - accents may cause mismatches in some PDFs"
+		"data": "✗ FAILS: (trocki 2008) - lowercase surname not detected\n✗ FAILS: (Wol-fgang Iser 1988) - line break in surname fails\n✗ FAILS: (Author 1999-2000) - year mismatch, use SOFT_YEAR (legacy parser) or match exactly\n✗ FAILS: (Iser [1988]) - brackets around year without surname immediately before\n✗ FAILS: (Smith, John 2010) - full name format not recognized\n✗ FAILS: (David Davidson 2010) - first name before surname fails\n✗ FAILS: see Frank 2002: 8–40 - unparenthesized citations unreliable\n✗ FAILS: (Zima [2015: 2-3]) - punctuation inside brackets confuses parser\n✗ FAILS: (Author 1990') - with apostrophe or special marks on year\n✗ FAILS: (Müller 2005) when bibliography has (Müller 2005) - accents may cause mismatches in some PDFs"
 	},
 	{
 		"tab_type": "parser",
@@ -363,7 +363,7 @@
 		"tab_type": "parser",
 		"data_type": "TEXT",
 		"position": 130,
-		"data": "✓ WORKS:\nAdorno, Theodor W., 1969: Prismen. Berlin: Suhrkamp Verlag.\n\n✓ WORKS:\nAdorno, Theodor W., 1969. Prismen. Berlin: Suhrkamp Verlag.\n\n✓ WORKS (with ALTERNATIVE_BIB):\n1964. Slovenska matica Ljubljana.\n\n✓ WORKS:\nTrocki, Carl A., 2008: The Strait of Malacca. New York: Columbia University Press."
+		"data": "✓ WORKS:\nAdorno, Theodor W., 1969: Prismen. Berlin: Suhrkamp Verlag.\n\n✓ WORKS:\nAdorno, Theodor W., 1969. Prismen. Berlin: Suhrkamp Verlag.\n\n✓ WORKS (with ALTERNATIVE_BIB, legacy parser only):\n1964. Slovenska matica Ljubljana.\n\n✓ WORKS:\nTrocki, Carl A., 2008: The Strait of Malacca. New York: Columbia University Press."
 	},
 	{
 		"tab_type": "parser",
@@ -375,7 +375,7 @@
 		"tab_type": "parser",
 		"data_type": "TEXT",
 		"position": 140,
-		"data": "✗ FAILS:\n1969 Adorno, Theodor W. - year before name breaks format\n\n✗ FAILS:\nAdorno, Theodor W. 1969 - missing colon or period after year\n\n✗ FAILS:\nTheodor W. Adorno, 1969 - first name before surname\n\n✗ FAILS:\nAdorno (1969) - parenthetical format not recognized\n\n✗ FAILS:\nAdorno Theodor W. 1969 - missing commas\n\n✗ FAILS:\nAdorno,T.W.,1969 - abbreviated first names may not match\n\n✗ FAILS (without ALTERNATIVE_BIB):\n1964. Slovenska matica - year-first format rejected"
+		"data": "✗ FAILS:\n1969 Adorno, Theodor W. - year before name breaks format\n\n✗ FAILS:\nAdorno, Theodor W. 1969 - missing colon or period after year\n\n✗ FAILS:\nTheodor W. Adorno, 1969 - first name before surname\n\n✗ FAILS:\nAdorno (1969) - parenthetical format not recognized\n\n✗ FAILS:\nAdorno Theodor W. 1969 - missing commas\n\n✗ FAILS:\nAdorno,T.W.,1969 - abbreviated first names may not match\n\n✗ FAILS (without ALTERNATIVE_BIB, legacy parser only):\n1964. Slovenska matica - year-first format rejected"
 	},
 	{
 		"tab_type": "parser",
@@ -399,7 +399,7 @@
 		"tab_type": "parser",
 		"data_type": "TEXT",
 		"position": 160,
-		"data": "Problem: Citations not detected\n• Solution: Ensure surname is CAPITALIZED and matches bibliography exactly\n\nProblem: Wrong matches created\n• Solution: Disable DEEP_SEARCH for cleaner documents, use SEARCH_EXCLUDE for common abbreviations\n\nProblem: 'nav. d.' citations not linked\n• Solution: These refer to the previously cited work - the parser handles this automatically\n\nProblem: Links fail after PDF extraction\n• Solution: Use SOFT_YEAR=True for OCR-scanned documents\n\nProblem: Surname with hyphens fails\n• Solution: Ensure no line breaks in the PDF - reformat if necessary"
+		"data": "Problem: Citations not detected\n• Solution: Ensure surname is CAPITALIZED and matches bibliography exactly\n\nProblem: Wrong matches created\n• Solution: Disable DEEP_SEARCH for cleaner documents, use SEARCH_EXCLUDE for common abbreviations (both legacy parser only)\n\nProblem: 'nav. d.' citations not linked\n• Solution: These refer to the previously cited work - the parser handles this automatically\n\nProblem: Links fail after PDF extraction\n• Solution: Use SOFT_YEAR=True for OCR-scanned documents (legacy parser only)\n\nProblem: Surname with hyphens fails\n• Solution: Ensure no line breaks in the PDF - reformat if necessary"
 	},
 	{
 		"tab_type": "parser",
@@ -411,7 +411,7 @@
 		"tab_type": "parser",
 		"data_type": "TEXT",
 		"position": 170,
-		"data": "• Ensure bibliography entries follow: Surname, Name, Year: Title. Publisher.\n• Keep author names and years EXACTLY the same between citations and bibliography\n• Use SOFT_YEAR=False and DEEP_SEARCH=False for maximum precision if your document is clean\n• Enable DEEP_SEARCH and SOFT_YEAR for OCR-scanned documents with potential errors\n• Always review automatic links before saving output\n• Test with a small section first before processing entire document\n• Verify capitalization matches between citations and bibliography\n• Check for line breaks in surnames that may split names across pages"
+		"data": "• Ensure bibliography entries follow: Surname, Name, Year: Title. Publisher.\n• Keep author names and years EXACTLY the same between citations and bibliography\n• With the legacy parser, use SOFT_YEAR=False and DEEP_SEARCH=False for maximum precision if your document is clean\n• With the legacy parser, enable DEEP_SEARCH and SOFT_YEAR for OCR-scanned documents with potential errors\n• Always review automatic links before saving output\n• Test with a small section first before processing entire document\n• Verify capitalization matches between citations and bibliography\n• Check for line breaks in surnames that may split names across pages"
 	},
 	{
 		"tab_type": "bib_editor",
@@ -459,7 +459,7 @@
 		"tab_type": "bib_editor",
 		"data_type": "TEXT",
 		"position": 35,
-		"data": "Some element types accept multiple options separated by pipe symbols (|):\n\nSEPARATOR: Specify which delimiters to match\n  Example: , | : | .\n  Matches comma, colon, or period\n\nEXTRA_CHAR: Specify which punctuation marks\n  Example: ( | )\n  Matches opening or closing parenthesis\n\nOTHER_AUTHORS: Specify author indicators\n  Example: et al. | and | in\n  Matches \"et al.\" or \"and\" or \"in\""
+		"data": "Some element types accept multiple options separated by pipe symbols (|):\n\nSEPARATOR: Specify which delimiters to match\n  Example: , | : | .\n  Matches comma, colon, or period\n  Tip: a single space can be used as a separator (it is shown as [space])\n\nEXTRA_CHAR: Specify which punctuation marks\n  Example: ( | )\n  Matches opening or closing parenthesis\n\nOTHER_AUTHORS: Specify author indicators\n  Example: et al. | and | in\n  Matches \"et al.\" or \"and\" or \"in\""
 	},
 	{
 		"tab_type": "bib_editor",
@@ -519,7 +519,7 @@
 		"tab_type": "bib_editor",
 		"data_type": "TEXT",
 		"position": 90,
-		"data": "• Always start with SURNAME and YEAR as required match points\n• Ensure element order matches your actual bibliography format exactly\n• Use SEPARATOR to mark delimiters between elements\n• Include all visible delimiters in the structure (commas, colons, periods)\n• If entries vary slightly, create multiple alternative structures\n• Test with a sample bibliography before processing entire document\n• Leave unnecessary spacing out of options - the parser handles whitespace\n• For similar formats, reorder and modify existing structures rather than creating new ones"
+		"data": "• Always start with SURNAME and YEAR as required match points\n• Ensure element order matches your actual bibliography format exactly\n• Use SEPARATOR to mark delimiters between elements\n• Include all visible delimiters in the structure (commas, colons, periods)\n• A single space can be used as a SEPARATOR (shown as [space]) — useful for layouts like 'SURNAME NAME YEAR' with no punctuation\n• The YEAR is treated as an implicit separator: if no separator is defined before it, the parser splits the text around the year\n• If entries vary slightly, create multiple alternative structures\n• Test with a sample bibliography before processing entire document\n• For similar formats, reorder and modify existing structures rather than creating new ones"
 	},
 	{
 		"tab_type": "bib_editor",
@@ -532,5 +532,113 @@
 		"data_type": "TEXT",
 		"position": 100,
 		"data": "Problem: Parser doesn't recognize bibliography entries\n• Solution: Verify element order matches your actual bibliography exactly\n• Check that you included all delimiters (commas, colons, periods)\n• Ensure SURNAME and YEAR elements are present\n\nProblem: Wrong entries matched\n• Solution: The structure may be too permissive - add more SEPARATOR elements\n• Create a new alternative structure for different entry formats\n• Use IGNORE to skip unexpected prefixes or suffixes\n\nProblem: Changes not applied\n• Solution: Click 'Save Structure' to finalize edits\n• Reload the configuration in the main parser after saving"
+	},
+	{
+		"tab_type": "stats",
+		"data_type": "TITLE",
+		"position": 0,
+		"data": "Statistics Bar"
+	},
+	{
+		"tab_type": "stats",
+		"data_type": "TEXT",
+		"position": 5,
+		"data": "After linking completes, a narrow statistics bar appears directly below the PDF viewers. It gives you an at-a-glance summary of the linking results and quick access to more detail."
+	},
+	{
+		"tab_type": "stats",
+		"data_type": "TITLE",
+		"position": 10,
+		"data": "What It Shows"
+	},
+	{
+		"tab_type": "stats",
+		"data_type": "TEXT",
+		"position": 15,
+		"data": "The bar displays three numbers:\n• Citations: number of valid citations found\n• Bibliography: number of valid bibliography entries found\n• Linked: number of citations successfully linked to a bibliography entry\n\nHover over any number to see the full breakdown — how many valid entries were found out of the total, plus how many 'certain' matches have both surname and name known."
+	},
+	{
+		"tab_type": "stats",
+		"data_type": "TITLE",
+		"position": 20,
+		"data": "Clickable Numbers"
+	},
+	{
+		"tab_type": "stats",
+		"data_type": "TEXT",
+		"position": 25,
+		"data": "Each number is a clickable button that opens the Debug Output window on the matching tab:\n• Click Citations → Debug Output, Citations tab\n• Click Bibliography → Debug Output, Bibliography tab\n• Click Linked → Debug Output, Citations tab (with linked status)\n\nThis lets you jump straight from a summary number to the detailed list behind it."
+	},
+	{
+		"tab_type": "stats",
+		"data_type": "TITLE",
+		"position": 30,
+		"data": "Linked Count Colour"
+	},
+	{
+		"tab_type": "stats",
+		"data_type": "TEXT",
+		"position": 35,
+		"data": "The Linked number is colour-coded by the percentage of valid citations that were successfully linked:\n• Green (80% or more): most citations were linked\n• Amber (50–80%): roughly half or more were linked\n• Red (below 50%): fewer than half were linked\n\nUse the colour as a quick health check — a red number usually means the parser configuration needs attention."
+	},
+	{
+		"tab_type": "stats",
+		"data_type": "TITLE",
+		"position": 40,
+		"data": "Highlight All"
+	},
+	{
+		"tab_type": "stats",
+		"data_type": "TEXT",
+		"position": 45,
+		"data": "The 'Highlight all' checkbox toggles highlighting of every detected citation and bibliography entry on the current page. When enabled, the output viewers highlight all possible entries as you move between pages; when disabled, only the current selection and links are shown. Use it to review everything the parser found without clicking through the Debug Output."
+	},
+	{
+		"tab_type": "debug",
+		"data_type": "TITLE",
+		"position": 0,
+		"data": "Debug Output Window"
+	},
+	{
+		"tab_type": "debug",
+		"data_type": "TEXT",
+		"position": 5,
+		"data": "The Debug Output window shows diagnostic information from the linking process. Open it via the 'Debug Output' button in the configuration panel, or by clicking a number in the Statistics Bar."
+	},
+	{
+		"tab_type": "debug",
+		"data_type": "TITLE",
+		"position": 10,
+		"data": "The Three Tabs"
+	},
+	{
+		"tab_type": "debug",
+		"data_type": "TEXT",
+		"position": 15,
+		"data": "• Log: process log messages with level filtering (ALL, DEBUG, INFO, WARNING, ERROR, CRITICAL). Select a row to view the full message.\n• Citations: every detected citation with its page, year, surname, name, text, and linked status.\n• Bibliography: every detected bibliography entry with the same detail."
+	},
+	{
+		"tab_type": "debug",
+		"data_type": "TITLE",
+		"position": 20,
+		"data": "Jump to the Document Location"
+	},
+	{
+		"tab_type": "debug",
+		"data_type": "TEXT",
+		"position": 25,
+		"data": "Clicking a row in the Citations or Bibliography tab jumps the corresponding output viewer to where that entry was found in the document and highlights it. This lets you verify each detected citation or bibliography entry directly in the PDF.\n\nUseful columns:\n• Page: page within the current article\n• Pg doc: global page in the original document\n• Linked: ✓ marks entries that were successfully matched during linking"
+	},
+	{
+		"tab_type": "debug",
+		"data_type": "TITLE",
+		"position": 30,
+		"data": "Reading the Tables"
+	},
+	{
+		"tab_type": "debug",
+		"data_type": "TEXT",
+		"position": 35,
+		"data": "• '(not found)' is shown when the parser could not determine a value (missing surname, name, or year)\n• When linking fails or produces warnings, the dialogs point here — the Log tab contains the full error and warning messages"
 	}
 ]

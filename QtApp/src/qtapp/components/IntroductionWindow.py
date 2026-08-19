@@ -195,6 +195,18 @@ class IntroductionWindow(QWidget):
         self.bib_tab.insert_tab_content(self.set_tab_data("bib_editor"))
         self.tabs.addTab(self.bib_tab, "Bibliography editor")
 
+        # -- stats bar tab -------------------
+        # ------------------------------------
+        self.stats_tab = HelpTab(self)
+        self.stats_tab.insert_tab_content(self.set_tab_data("stats"))
+        self.tabs.addTab(self.stats_tab, "Statistics bar")
+
+        # -- debug output tab ----------------
+        # ------------------------------------
+        self.debug_tab = HelpTab(self)
+        self.debug_tab.insert_tab_content(self.set_tab_data("debug"))
+        self.tabs.addTab(self.debug_tab, "Debug output")
+
 
         
     def _load_help_content(self):
