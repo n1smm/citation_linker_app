@@ -1,5 +1,67 @@
 # Citation Linker - Citation & Bibliography Structure Guide
 
+## Requirements
+
+- **Python 3.12+**
+- **Git** (the project uses submodules, so clone with `--recurse-submodules`)
+- **Linux only:** `libxcb-xinerama0` and `libxcb-cursor0` are needed to run the Qt app
+
+## Build From Source
+
+1. Clone the repository including submodules:
+
+   ```bash
+   git clone --recurse-submodules <repository-url>
+   cd citation_linker_app
+   ```
+
+2. Create and activate a virtual environment:
+
+   ```bash
+   python3 -m venv .venv
+   source .venv/bin/activate   # Windows: .venv\Scripts\activate
+   ```
+
+3. Install the project and its dependencies:
+
+   ```bash
+   pip install -e ./citationLinker -e ./QtApp
+   ```
+
+4. Run the app:
+
+   ```bash
+   citation-linker-app
+   ```
+
+5. (Optional) Build a standalone executable:
+
+   ```bash
+   pip install pyinstaller
+   cd build_scripts
+   python build.py
+   ```
+
+   The executable is created in `build_scripts/dist/`:
+   - Windows: `Citation Linker.exe`
+   - macOS: `Citation Linker.app`
+   - Linux: `Citation Linker`
+
+## Run From Release
+
+1. Go to the **Releases** page and download the asset for your platform:
+   - **Windows:** `Citation Linker.exe` - just double-click it, no installation needed.
+   - **Linux:** `Citation Linker` - make it executable and run it:
+
+     ```bash
+     chmod +x "Citation Linker"
+     ./"Citation Linker"
+     ```
+
+   - **macOS:** `Citation-Linker-macOS.zip` - unzip and run `Citation Linker.app` (not tested on macOS).
+
+2. No installation or Python is required for the release executables.
+
 ## Usage
 If you download the latest release executable for your platform it should work without any installation. (was not tested on mac)
 Testing version also opens a console in Windows. there is a small delay between when console opens and the program starts and the console might overlap with the app so check in your system tray (menu bar)
