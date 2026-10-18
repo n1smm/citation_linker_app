@@ -20,7 +20,9 @@ a = Analysis(
     binaries=[],
     datas=[
         # Include citation_linker data files
-        (str(citation_linker_src / 'citation_linker' / 'data'), 'citation_linker/data'),
+		(str(citation_linker_src / 'citation_linker' / 'data'), 'citation_linker/data'),
+		(str(qtapp_src / 'qtapp' / 'styles'), 'qtapp/styles'),
+		(str(qtapp_src / 'qtapp' / 'data'), 'qtapp/data'),
     ],
     hiddenimports=[
         # Add all citation_linker modules
