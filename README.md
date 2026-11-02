@@ -1,4 +1,13 @@
 # Citation Linker - Citation & Bibliography Structure Guide
+Citation Linker is a free and open-source standalone tool consisting of a CLI and a Qt-based desktop app. <br>
+Its purpose is to help speed up and automate digitalization of academic paper media. <br>
+It works on OCR-scanned PDF documents, parses them for citations and bibliographies creating in-document links between them. <br>
+The UI allows for quick post-processing manual corrections. <br>
+<br>
+It aims to help with Open Access (OA) publishing. Digitalization is a time-consuming endeavor, <br>
+and automating a part of it can help free resources of publisher for other tasks and projects.
+
+
 
 ## Requirements
 
@@ -225,3 +234,22 @@ the script was tested with the citation style used in the publications of *Studi
 - Use `DEEP_SEARCH=False` and `SOFT_YEAR=False` for maximum precision if your document is clean
 - Enable `DEEP_SEARCH` and `SOFT_YEAR` for documents with potential OCR errors or inconsistencies
 - Add common abbreviations to `SEARCH_EXCLUDE` to reduce false positives
+
+## AI use disclaimer
+
+All AI output and suggestions were reviewed and manually corrected or adjusted where needed for better integration with the rest of the written code.
+
+#### AI generated code and content:
+
+- help pages
+- readme instructions (most of it, with some parts corrected or written manually)
+- configuration tab (just UI not the underlying functionality)
+- logger
+- some parts of modular bibliography parser
+- tabbing wrapper for the program
+
+#### Other use of AI:
+Used to check for possible errors and edge cases. Help with understanding bugs and troubleshooting.
+
+#### Future use of AI:
+The goal is to slowly rewrite some AI written parts manually, making it easier for possible future contributors to join. The text content that was generated will slowly be getting manual rewrites. The goal of future AI use is to have it as a sort of external review, feedback and test machine. It should help speed up parts of the process while also trying to maintain human input as the main form of design decisons and code/content additions.
